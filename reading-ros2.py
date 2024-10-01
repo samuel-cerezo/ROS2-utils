@@ -1,20 +1,24 @@
-from rosbags.rosbag2 import Writer
+from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
 
 
 # Create a typestore and get the string class.
 typestore = get_typestore(Stores.LATEST)
-String = typestore.types['std_msgs/msg/String']
 
-# Create writer instance and open for writing.
-with Writer('/home/samuel/Desktop/d435/rosbag-01-oct') as writer:
+# Create reader instance and open for reading.
+with Reader('/home/samuel/Desktop/d435/rosbag-01-oct') as reader:
+    # Topic and msgtype information is available on .connections list.
+    for connection in reader.connections:
+        print(connection.topic, connection.msgtype)
 
-    # Add new connection.
-    topic = '/chatter'
-    msgtype = String.__msgtype__
-    connection = writer.add_connection(topic, msgtype, typestore=typestore)
+    # Iterate over messages.
+    for connection, timestamp, rawdata in reader.messages():
+        if connection.topic == '/imu_raw/Imu':
+            msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+            print(msg.header.frame_id)
 
-    # Serialize and write message.
-    timestamp = 42
-    message = String('hello world')
-    writer.write(connection, timestamp, typestore.serialize_cdr(message, msgtype))
+    # The .messages() method accepts connection filters.
+    connections = [x for x in reader.connections if x.topic == '/imu_raw/Imu']
+    for connection, timestamp, rawdata in reader.messages(connections=connections):
+        msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+        print(msg.header.frame_id)

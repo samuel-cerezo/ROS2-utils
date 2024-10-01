@@ -7,7 +7,7 @@ typestore = get_typestore(Stores.LATEST)
 String = typestore.types['std_msgs/msg/String']
 
 # Create writer instance and open for writing.
-with Writer('/home/samuel/Desktop/d435-python/rosbag-01-oct') as writer:
+with Writer('/home/samuel/Desktop/d435/rosbag-01-oct') as writer:
 
     # Add new connection.
     topic = '/chatter'
