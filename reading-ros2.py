@@ -2,11 +2,14 @@ from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
 
 
+rosfile_path = "/home/samuel/Desktop/d435/rosbag-01-oct"
+
+
 # Create a typestore and get the string class.
 typestore = get_typestore(Stores.LATEST)
 
 # Create reader instance and open for reading.
-with Reader('/home/samuel/Desktop/d435/rosbag-01-oct') as reader:
+with Reader(rosfile_path) as reader:
     # Topic and msgtype information is available on .connections list.
     for connection in reader.connections:
         print("Conection: ", connection.topic, connection.msgtype)
