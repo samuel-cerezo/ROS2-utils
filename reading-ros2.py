@@ -1,5 +1,8 @@
 from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
+from rosbags.image import image_to_cvimage
+import cv2
+import os
 
 
 #rosfile_path = "/home/samuel/Desktop/d435/rosbag-01-oct"
@@ -7,8 +10,11 @@ from rosbags.typesys import Stores, get_typestore
 
 
 rosfile_path = "/home/samuel/Desktop/pics_samuel"
-search_topic = '/camera/camera/color/camera_info'
 
+images_path = '/home/samuel/Desktop/d435/color-images'
+
+search_topic = '/camera/camera/color/camera_info'
+search_topic = '/camera/camera/color/image_raw'
 
 # Create a typestore and get the string class.
 typestore = get_typestore(Stores.LATEST)
@@ -26,7 +32,22 @@ with Reader(rosfile_path) as reader:
     for connection, timestamp, rawdata in reader.messages():
         if connection.topic == search_topic:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+            img = image_to_cvimage(msg) # get image in source color space
+            img = image_to_cvimage(msg, 'bgr8') # get image and convert to specific color space
+            img_name = str(timestamp) + '.jpg'
+            cv2.imwrite(os.path.join(images_path , img_name), img, [cv2.IMWRITE_JPEG_QUALITY, 90])   
         counter+=1
+
+
+    '''
+    # ----------------------- Displays image inside a window
+    cv2.imshow('color image',img)  
+    # Waits for a keystroke
+    cv2.waitKey(0)  
+    # Destroys all the windows created
+    cv2.destroyAllwindows()
+    # ---------------------------------------------------------
+    '''
     print("Message:",msg,"Timestamp:",timestamp)    
     print("Total messages: ",counter)
 
@@ -37,3 +58,7 @@ with Reader(rosfile_path) as reader:
         msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
         print(msg.header.frame_id)
 '''
+
+
+
+
