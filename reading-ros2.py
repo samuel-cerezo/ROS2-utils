@@ -6,7 +6,7 @@ from rosbags.typesys import Stores, get_typestore
 #search_topic = '/chatter'
 
 
-rosfile_path = "/home/samuel/Desktop/d435/pics_samuel"
+rosfile_path = "/home/samuel/Desktop/pics_samuel"
 search_topic = '/camera/camera/color/camera_info'
 
 
@@ -26,9 +26,8 @@ with Reader(rosfile_path) as reader:
     for connection, timestamp, rawdata in reader.messages():
         if connection.topic == search_topic:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
-            print("Message:",msg,"Timestamp:",timestamp)
         counter+=1
-    
+    print("Message:",msg,"Timestamp:",timestamp)    
     print("Total messages: ",counter)
 
 '''
