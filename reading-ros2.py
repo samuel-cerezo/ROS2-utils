@@ -9,13 +9,24 @@ import os
 #search_topic = '/chatter'
 
 
+# ----------------- folders managing ------------------
+
 rosfile_path = "/home/samuel/Desktop/pics_samuel"
+rgb_path = '/home/samuel/Desktop/d435/images/rgb'
+depth_path = '/home/samuel/Desktop/d435/images/depth'
 
-images_path = '/home/samuel/Desktop/d435/color-images'
+if not os.path.exists(rgb_path):
+    os.makedirs(rgb_path)
+if not os.path.exists(depth_path):
+    os.makedirs(depth_path)
 
-search_topic = '/camera/camera/color/camera_info'
-search_topic = '/camera/camera/color/image_raw'
+# ---------------------- topics ------------------------------
+search_topic= '/camera/camera/color/camera_info'
+color_images_topic= '/camera/camera/color/image_raw'
+depth_images_topic = '/camera/camera/aligned_depth_to_color/image_raw'
+info_depth_topic = '/camera/camera/depth/camera_info'
 
+# ------------------------------------------------------------
 # Create a typestore and get the string class.
 typestore = get_typestore(Stores.LATEST)
 
@@ -30,12 +41,26 @@ with Reader(rosfile_path) as reader:
     counter = 0
     # Iterate over messages.
     for connection, timestamp, rawdata in reader.messages():
-        if connection.topic == search_topic:
+        # --------- color images ----------------
+        if connection.topic == color_images_topic:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
             img = image_to_cvimage(msg) # get image in source color space
             img = image_to_cvimage(msg, 'bgr8') # get image and convert to specific color space
-            img_name = str(timestamp) + '.jpg'
-            cv2.imwrite(os.path.join(images_path , img_name), img, [cv2.IMWRITE_JPEG_QUALITY, 90])   
+            img_name = str(timestamp) + '.png'
+            cv2.imwrite(os.path.join(rgb_path , img_name), img)
+
+        # ----------- depth images ---------------
+        if connection.topic == depth_images_topic:
+            msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+            img = image_to_cvimage(msg) # get image in source color space
+            img = image_to_cvimage(msg, 'mono16') # get image and convert to specific color space
+            img_name = str(timestamp) + '.png'
+            cv2.imwrite(os.path.join(depth_path , img_name), img)  
+
+        # ----------- info depth images ---------------
+        if connection.topic == info_depth_topic:
+            info_msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+                
         counter+=1
 
 
@@ -48,7 +73,7 @@ with Reader(rosfile_path) as reader:
     cv2.destroyAllwindows()
     # ---------------------------------------------------------
     '''
-    print("Message:",msg,"Timestamp:",timestamp)    
+    print("Message depth:",info_msg,"Timestamp:",timestamp)    
     print("Total messages: ",counter)
 
 '''
