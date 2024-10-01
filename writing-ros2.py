@@ -16,5 +16,14 @@ with Writer('/home/samuel/Desktop/d435/rosbag-01-oct') as writer:
 
     # Serialize and write message.
     timestamp = 42
-    message = String('hello world')
+    message = String('hello world')   
+    writer.write(connection, timestamp, typestore.serialize_cdr(message, msgtype))
+    timestamp = 43
+    message = String('second message')
+    writer.write(connection, timestamp, typestore.serialize_cdr(message, msgtype))
+    timestamp = 44
+    message = String('hthird message')
+    writer.write(connection, timestamp, typestore.serialize_cdr(message, msgtype))
+    timestamp = 45
+    message = String('fourth message')
     writer.write(connection, timestamp, typestore.serialize_cdr(message, msgtype))
