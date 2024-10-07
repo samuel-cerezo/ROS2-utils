@@ -11,10 +11,10 @@ rgb_path = file_path + rosfile_name + '_data' + '/rgb'
 depth_path = file_path + rosfile_name + '_data' + '/depth'
 
 img = cv2.imread(depth_path + '/1728286188895709757.png', cv2.IMREAD_UNCHANGED)
-print(img.max())
+#print(img.max())
 sampleArray = np.array(img) 
 
 float_array = np.array(img, dtype=float)
 float_array = float_array*0.001
-print(sampleArray)
+print('Depth values in meters:')
 print(float_array)
