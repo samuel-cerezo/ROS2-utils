@@ -10,15 +10,18 @@ import os
 
 
 # ----------------- folders managing ------------------
+rosfile_name = 'd435_test1'
+file_path = "/home/samuel/Desktop/"
 
-rosfile_path = "/home/samuel/Desktop/pics_samuel"
-rgb_path = '/home/samuel/Desktop/d435/images/rgb'
-depth_path = '/home/samuel/Desktop/d435/images/depth'
+rgb_path = file_path + rosfile_name + '_data' + '/rgb'
+depth_path = file_path + rosfile_name + '_data' + '/depth'
 
 if not os.path.exists(rgb_path):
     os.makedirs(rgb_path)
 if not os.path.exists(depth_path):
     os.makedirs(depth_path)
+
+rosfile_path = file_path + rosfile_name
 
 # ---------------------- topics ------------------------------
 search_topic= '/camera/camera/color/camera_info'
@@ -52,8 +55,9 @@ with Reader(rosfile_path) as reader:
         # ----------- depth images ---------------
         if connection.topic == depth_images_topic:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+            print(msg.header.frame_id)
             img = image_to_cvimage(msg) # get image in source color space
-            img = image_to_cvimage(msg, 'mono16') # get image and convert to specific color space
+            #img = image_to_cvimage(msg, 'bgr8') # get image and convert to specific color space
             img_name = str(timestamp) + '.png'
             cv2.imwrite(os.path.join(depth_path , img_name), img)  
 
