@@ -20,7 +20,6 @@ if not os.path.exists(file_path):
 # ---------------------------------------------------
 
 
-
 # -----------------------fresh reset ---------------------------------
 # Configure depth and color streams
 pipeline = rs.pipeline()
@@ -29,7 +28,7 @@ config = rs.config()
 config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
-'''
+
 print("resetting...")
 ctx = rs.context()
 devices = ctx.query_devices()
@@ -37,7 +36,7 @@ for dev in devices:
     dev.hardware_reset()
     time.sleep(4)
 print("fresh reset done")
-'''
+
 # --------------------------------------------------------------------
 
 
@@ -72,7 +71,7 @@ try:
 
             userValue = input('Enter any key for saving an image or (q) for finish: ')
 
-            if userValue == 'q':
+            if userValue.lower() == 'q':
                 break
 
             # Wait for a coherent pair of frames: depth and color
@@ -102,8 +101,8 @@ try:
             # Using cv2.imwrite() method
             # Saving the image
             #cv2.imwrite(file_path + file_name + '.png', color_image)
-            cv2.imwrite(file_path + str(counter)+'.png', color_image)
-            print("%02d " % counter)            
+            counter_str = "{:02}".format(counter)   # convert to string of 2 digits: "05.png"
+            cv2.imwrite(file_path + counter_str+'.png', color_image)
             counter += 1
             
             # Show images
