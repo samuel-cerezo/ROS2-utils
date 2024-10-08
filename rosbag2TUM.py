@@ -4,73 +4,121 @@ from rosbags.image import image_to_cvimage
 import cv2
 import os
 
-# --------------------- Folders Management -------------------------
-rosfile_path = "/home/samuel/Desktop/d435_test1"  # Path to the ROSBAG file
-rosfile_data_destiny = '/home/samuel/Desktop/d435_test2_data'  # Destination path for extracted images
+def create_output_directories(base_dir):
+    """
+    Creates directories for storing extracted RGB and depth images.
+    
+    Args:
+        base_dir (str): Base directory where the 'rgb' and 'depth' folders will be created.
+    
+    Returns:
+        tuple: Paths for RGB and depth image directories.
+    """
+    rgb_path = os.path.join(base_dir, 'rgb')
+    depth_path = os.path.join(base_dir, 'depth')
+    
+    # Create the directories if they do not exist
+    os.makedirs(rgb_path, exist_ok=True)
+    os.makedirs(depth_path, exist_ok=True)
+    
+    return rgb_path, depth_path
 
-# Define paths for RGB and depth images
-rgb_path = os.path.join(rosfile_data_destiny, 'rgb')
-depth_path = os.path.join(rosfile_data_destiny, 'depth')
+def extract_and_save_images(reader, typestore, rgb_path, depth_path, topics):
+    """
+    Reads a ROSBAG and extracts RGB and depth images, saving them to the specified directories.
+    
+    Args:
+        reader (Reader): ROSBAG reader instance.
+        typestore (TypeStore): ROSBAG TypeStore for deserializing messages.
+        rgb_path (str): Path to save the extracted RGB images.
+        depth_path (str): Path to save the extracted depth images.
+        topics (dict): A dictionary containing the relevant topics for color and depth images.
+    
+    Returns:
+        int: The total number of processed messages.
+    """
+    msg_count = 0
 
-# Create directories if they do not exist
-if not os.path.exists(rgb_path):
-    os.makedirs(rgb_path)
-if not os.path.exists(depth_path):
-    os.makedirs(depth_path)
+    for connection, timestamp, rawdata in reader.messages():
+        # Process color images
+        if connection.topic == topics['color_images']:
+            msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+            img = image_to_cvimage(msg, 'bgr8')  # Convert to BGR color space
+            img_name = f'{timestamp}.png'
+            cv2.imwrite(os.path.join(rgb_path, img_name), img)
+            print(f"Saved RGB image: {img_name}")
+        
+        # Process depth images
+        elif connection.topic == topics['depth_images']:
+            msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+            img = image_to_cvimage(msg)  # Depth image does not need color conversion
+            img_name = f'{timestamp}.png'
+            cv2.imwrite(os.path.join(depth_path, img_name), img)
+            print(f"Saved Depth image: {img_name}")
 
-# ----------------- Subscribe to These Topics --------------------
-search_topic = '/camera/camera/color/camera_info'
-color_images_topic = '/camera/camera/color/image_raw'
-depth_images_topic = '/camera/camera/aligned_depth_to_color/image_raw'
-info_depth_topic = '/camera/camera/depth/camera_info'
+        msg_count += 1
 
-# Create a typestore to deserialize messages
-typestore = get_typestore(Stores.LATEST)
+    return msg_count
+
+def list_topics(reader):
+    """
+    Lists the available topics in a ROSBAG file.
+    
+    Args:
+        reader (Reader): ROSBAG reader instance.
+    
+    Returns:
+        None
+    """
+    print("Available Topics in the ROSBAG file:")
+    for i, connection in enumerate(reader.connections, start=1):
+        print(f"Topic {i}: {connection.topic}, Message Type: {connection.msgtype}")
+
+def main(rosbag_path, output_dir):
+    """
+    Main function to extract and save RGB and depth images from a ROSBAG file.
+    
+    Args:
+        rosbag_path (str): Path to the ROSBAG file.
+        output_dir (str): Destination path where extracted images will be saved.
+    
+    Returns:
+        None
+    """
+    # Topics to extract
+    topics = {
+        'color_images': '/camera/camera/color/image_raw',
+        'depth_images': '/camera/camera/aligned_depth_to_color/image_raw'
+    }
+
+    # Create typestore for message deserialization
+    typestore = get_typestore(Stores.LATEST)
+    
+    # Create output directories for RGB and depth images
+    rgb_path, depth_path = create_output_directories(output_dir)
+    
+    try:
+        # Open the ROSBAG file using a Reader
+        with Reader(rosbag_path) as reader:
+            # List all topics in the bag file
+            list_topics(reader)
+            
+            print("\nReading and extracting images from the ROSBAG...\n")
+            
+            # Extract and save images
+            total_messages = extract_and_save_images(reader, typestore, rgb_path, depth_path, topics)
+            
+            print(f"\nProcessing completed. Total messages processed: {total_messages}")
+
+    except FileNotFoundError:
+        print(f"Error: The ROSBAG file at {rosbag_path} was not found.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    """
-    Main execution block to read a ROSBAG file and extract RGB and depth images.
-    It saves the images in the specified destination folders.
-    """
+    # Define the path to the ROSBAG file and output directory
+    rosbag_path = "/home/samuel/Desktop/d435_test1"
+    output_dir = "/home/samuel/Desktop/d435_test2_data"
     
-    # Create a reader instance to read from the ROSBAG file
-    with Reader(rosfile_path) as reader:
-        # Output the available topics and their message types
-        counter = 1
-        for connection in reader.connections:
-            print("Topic N°", counter, "--> Name:", connection.topic, "msgtype:", connection.msgtype)
-            counter += 1
-        
-        print('The ROSBAG file has', counter, 'topics.\n')
-        print('Reading and saving the images...\n')
-
-        counter = 0  # Reset counter for processed messages
-
-        # Iterate over messages in the ROSBAG
-        for connection, timestamp, rawdata in reader.messages():
-            # --------- Process Color Images ----------------
-            if connection.topic == color_images_topic:
-                # Deserialize the message to get image data
-                msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
-                img = image_to_cvimage(msg)  # Get image in the original color space
-                img = image_to_cvimage(msg, 'bgr8')  # Convert image to BGR color space
-                img_name = str(timestamp) + '.png'  # Name the image file based on timestamp
-                cv2.imwrite(os.path.join(rgb_path, img_name), img)  # Save the image
-
-            # ----------- Process Depth Images ---------------
-            if connection.topic == depth_images_topic:
-                # Deserialize the message to get depth image data
-                msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
-                img = image_to_cvimage(msg)  # Get image in the original color space
-                img_name = str(timestamp) + '.png'  # Name the depth image file
-                cv2.imwrite(os.path.join(depth_path, img_name), img)  # Save the depth image
-
-            # ----------- Process Info Depth Images ---------------
-            if connection.topic == info_depth_topic:
-                # Deserialize the message to get depth camera info
-                info_msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
-
-            counter += 1  # Increment message counter
-
-        # Output the total number of processed messages
-        print("Work done. Total messages: ", counter)
+    # Call the main function
+    main(rosbag_path, output_dir)

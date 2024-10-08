@@ -3,131 +3,180 @@ import numpy as np
 import cv2
 import os
 import time
-from include.transformations import *  # Import custom transformation functions
+from include.transformations import euler_to_rotation_matrix  # Import custom transformation functions
 
-# ----------------- Folders Management ------------------
-calib_path = '/home/samuel/Desktop/d435_calibration/'  # Path for calibration files
-poses_txt_name = 'robot_poses'  # Base name for the poses text file
 
-if __name__ == "__main__":
+def create_directories(calib_path, images_folder='images'):
     """
-    Main execution block to capture images from a RealSense camera 
-    and log robot poses to a text file.
-    """
+    Creates necessary directories for storing images and calibration files.
 
+    Args:
+        calib_path (str): The base path for calibration data.
+        images_folder (str): Folder name to store captured images.
+    
+    Returns:
+        str: Path to the image folder.
+    """
     # Create a directory to save images if it doesn't exist
-    file_path = os.path.join(calib_path, 'images/')
+    file_path = os.path.join(calib_path, images_folder)
     if not os.path.exists(file_path):
         os.makedirs(file_path)
+    return file_path
 
-    # Check if the poses file already exists and prompt user for action
-    poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_6D.txt")
-    hom_poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_hom.txt")
-   
+
+def check_pose_files(poses_file_path, hom_poses_file_path):
+    """
+    Checks if pose files already exist and prompts the user for action.
+
+    Args:
+        poses_file_path (str): Path for the 6D pose file.
+        hom_poses_file_path (str): Path for the homogeneous pose file.
+    
+    Returns:
+        str, str: Updated paths for the pose files.
+    """
     if os.path.exists(poses_file_path):
-        userAction = input('Robot pose file already exists. Want to remove it? (y/n): ')
-        while userAction.lower() not in ['y', 'n']:
-            userAction = input('Robot pose file already exists. Want to remove it? (y/n): ')
-
-        if userAction.lower() == 'y':
+        user_action = input('Pose file already exists. Overwrite? (y/n): ').strip().lower()
+        if user_action == 'y':
             os.remove(poses_file_path)
-            if os.path.exists(hom_poses_file_path):
-                os.remove(hom_poses_file_path)
-        elif userAction.lower() == 'n':
-            poses_txt_name = input('Enter a new name for the Robot pose file: ')
-            poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_6D.txt")
-            hom_poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_hom.txt")
+            os.remove(hom_poses_file_path) if os.path.exists(hom_poses_file_path) else None
+        elif user_action == 'n':
+            new_name = input('Enter a new name for the pose file: ').strip()
+            poses_file_path = os.path.join(os.path.dirname(poses_file_path), f"{new_name}_6D.txt")
+            hom_poses_file_path = os.path.join(os.path.dirname(hom_poses_file_path), f"{new_name}_hom.txt")
+    return poses_file_path, hom_poses_file_path
 
-    # ----------------------- Fresh Reset ---------------------------------
-    # Configure depth and color streams
-    pipeline = rs.pipeline()
-    config = rs.config()
-    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)  # Enable depth stream
-    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)  # Enable color stream
 
-    print("Resetting...")
+def reset_device():
+    """
+    Resets the RealSense device hardware and ensures a fresh start.
+    
+    Returns:
+        rs.pipeline: The configured RealSense pipeline object.
+    """
+    print("Resetting the device...")
     ctx = rs.context()
     devices = ctx.query_devices()
     for dev in devices:
-        dev.hardware_reset()  # Reset device hardware
-        time.sleep(4)  # Wait for reset to complete
-    print("Fresh reset done.\n")
+        dev.hardware_reset()
+        time.sleep(4)
+    print("Device reset complete.\n")
+    
+    # Initialize and configure RealSense streams
+    pipeline = rs.pipeline()
+    config = rs.config()
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+    
+    return pipeline, config
 
-    # Verify the device has a color sensor
-    pipeline_wrapper = rs.pipeline_wrapper(pipeline)
-    pipeline_profile = config.resolve(pipeline_wrapper)
-    device = pipeline_profile.get_device()
-    device_product_line = str(device.get_info(rs.camera_info.product_line))
 
-    found_rgb = False
-    for s in device.sensors:
-        if s.get_info(rs.camera_info.name) == 'RGB Camera':
-            found_rgb = True
-            break
-    if not found_rgb:
-        print("The demo requires a Depth camera with a Color sensor")
-        exit(0)
+def validate_rgb_sensor(device):
+    """
+    Validates that the RealSense device has an RGB camera.
 
-    # Start streaming
-    pipeline.start(config)
+    Args:
+        device (rs.device): RealSense device object.
+    
+    Returns:
+        bool: True if RGB camera is found, False otherwise.
+    """
+    for sensor in device.sensors:
+        if sensor.get_info(rs.camera_info.name) == 'RGB Camera':
+            return True
+    print("This script requires a Depth camera with an RGB sensor.")
+    return False
 
-    MaxNrImages = 40  # Maximum number of images to capture
-    counter = 0  # Initialize counter for saved images
 
-    # Write a header for showing the format in robot pose file txt
+def capture_images(pipeline, file_path, poses_file_path, hom_poses_file_path, max_images=40):
+    """
+    Captures images from the RealSense camera and logs robot poses.
+
+    Args:
+        pipeline (rs.pipeline): The RealSense pipeline for image capture.
+        file_path (str): Directory path to save the captured images.
+        poses_file_path (str): Path to save the 6D robot poses.
+        hom_poses_file_path (str): Path to save the homogeneous robot poses.
+        max_images (int): Maximum number of images to capture.
+    
+    Returns:
+        None
+    """
+    counter = 0  # Initialize image counter
+
+    # Add headers to the pose files
     with open(poses_file_path, "a") as pose_file:
-        pose_file.write('# posx, posy, posz, angle1, angle2, angle3' + '\n')
-    
+        pose_file.write('# posx, posy, posz, angle1, angle2, angle3\n')
     with open(hom_poses_file_path, "a") as pose_file:
-        pose_file.write('# R11, R12, R13, posx,R21, R22, R23, posy, R31, R32, R33, posz, 0,0,0,1' + '\n')
-    
+        pose_file.write('# R11, R12, R13, posx,R21, R22, R23, posy, R31, R32, R33, posz, 0,0,0,1\n')
+
     try:
-        while counter < MaxNrImages:
-            userEntry = input('Enter the robot pose or (quit) to finish: ')
+        while counter < max_images:
+            user_entry = input('Enter robot pose or type "quit" to finish: ').strip().lower()
 
-            if userEntry.lower() == 'quit':
+            if user_entry == 'quit':
                 break
-            
-            # Split the string into individual values
-            string_list = userEntry.split(',')
-            # Convert each value to a float
-            float_list = [float(value) for value in string_list]
-            position_float = float_list[0:3]
-            angles_float = float_list[3:]
 
-        #    R11, R12, R13, posx,R21, R22, R23, posy, R31, R32, R33, posz, 0,0,0,1 
+            # Parse and validate the user input
+            try:
+                float_list = [float(value) for value in user_entry.split(',')]
+                position_float = float_list[:3]
+                angles_float = float_list[3:]
+            except ValueError:
+                print("Invalid input. Please enter valid numbers separated by commas.")
+                continue
 
-            # Convert angles to rotation matrix with ZYX order
-            rotation_matrix = euler_to_rotation_matrix(angles_float, order='ZYX')   # use 'ZYX' or 'XYZ'
-            #print(rotation_matrix)
-            robot_pose_hom = [rotation_matrix[0,0] , rotation_matrix[0,1] , rotation_matrix[0,2], position_float[0],
-                              rotation_matrix[1,0] , rotation_matrix[1,1] , rotation_matrix[1,2], position_float[1],
-                              rotation_matrix[2,0] , rotation_matrix[2,1] , rotation_matrix[2,2], position_float[2],
-                                        0,                  0,                      0,                  1           ]
+            # Convert angles to rotation matrix
+            rotation_matrix = euler_to_rotation_matrix(angles_float, order='ZYX')
 
-            # Write the robot pose to the text file (homogenous format)
+            # Prepare the homogeneous pose list
+            robot_pose_hom = [
+                rotation_matrix[0, 0], rotation_matrix[0, 1], rotation_matrix[0, 2], position_float[0],
+                rotation_matrix[1, 0], rotation_matrix[1, 1], rotation_matrix[1, 2], position_float[1],
+                rotation_matrix[2, 0], rotation_matrix[2, 1], rotation_matrix[2, 2], position_float[2],
+                0, 0, 0, 1
+            ]
+
+            # Write the robot pose to the text files
+            with open(poses_file_path, "a") as pose_file:
+                pose_file.write(user_entry + '\n')
             with open(hom_poses_file_path, "a") as pose_file:
                 pose_file.write(str(robot_pose_hom) + '\n')
 
-            # Write the robot pose to the text file (6D format)
-            with open(poses_file_path, "a") as pose_file:
-                pose_file.write(userEntry + '\n')
-
-            # Wait for a coherent pair of frames: depth and color
+            # Capture and save image
             frames = pipeline.wait_for_frames()
-            color_frame = frames.get_color_frame()  # Get color frame
-
-            # Convert the color frame to a numpy array
+            color_frame = frames.get_color_frame()
             color_image = np.asanyarray(color_frame.get_data())
-
-            # Save the color image with a formatted counter
-            counter_str = "{:02}".format(counter)  # Format counter as two digits
-            cv2.imwrite(os.path.join(file_path, f"{counter_str}.png"), color_image)  # Save image
+            image_name = f"{counter:02}.png"
+            cv2.imwrite(os.path.join(file_path, image_name), color_image)
             counter += 1
-            print(f"{file_path}{counter_str}.png saved.")
-
-        print('Process finished.')
+            print(f"Saved image: {image_name}")
 
     finally:
-        # Stop streaming when done
+        # Stop streaming when finished
         pipeline.stop()
+        print("Image capture finished.")
+
+
+if __name__ == "__main__":
+    """
+    Main execution block to capture images from a RealSense camera and log robot poses.
+    """
+    # Set calibration folder path and file names
+    calib_path = '/home/samuel/Desktop/d435_calibration/'
+    poses_txt_name = 'robot_poses'
+
+    # Prepare directories and file paths
+    image_folder = create_directories(calib_path)
+    poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_6D.txt")
+    hom_poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_hom.txt")
+    poses_file_path, hom_poses_file_path = check_pose_files(poses_file_path, hom_poses_file_path)
+
+    # Reset and configure the device
+    pipeline, config = reset_device()
+    device = config.resolve(rs.pipeline_wrapper(pipeline)).get_device()
+
+    if validate_rgb_sensor(device):
+        # Start capturing images
+        pipeline.start(config)
+        capture_images(pipeline, image_folder, poses_file_path, hom_poses_file_path)
