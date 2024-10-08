@@ -2,7 +2,6 @@ import cv2
 import os
 import numpy as np
 
-
 # ----------------- folders managing ------------------
 rosfile_name = 'd435_test1'
 file_path = "/home/samuel/Desktop/"

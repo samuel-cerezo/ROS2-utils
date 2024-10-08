@@ -1,74 +1,63 @@
-## License: Apache 2.0. See LICENSE file in root directory.
-## Copyright(c) 2015-2017 Intel Corporation. All Rights Reserved.
-
-###############################################
-##      Open CV and Numpy integration        ##
-###############################################
-
 import pyrealsense2 as rs
 import numpy as np
 import cv2
 import os
 import time
-from include.transformations import * 
+from include.transformations import *  # Import custom transformation functions
 
-# ----------------- folders managing ------------------
-calib_path = '/home/samuel/Desktop/d435_calibration/'
-poses_txt_name = 'robot_poses'
-
+# ----------------- Folders Management ------------------
+calib_path = '/home/samuel/Desktop/d435_calibration/'  # Path for calibration files
+poses_txt_name = 'robot_poses'  # Base name for the poses text file
 
 if __name__ == "__main__":
+    """
+    Main execution block to capture images from a RealSense camera 
+    and log robot poses to a text file.
+    """
 
-    # Define Euler angles in radians: [yaw, pitch, roll]
+    # Define Euler angles in radians for rotation matrix conversion
     euler_angles = [np.radians(30), np.radians(45), np.radians(60)]  # Example angles
-    # Convert to rotation matrix with ZYX order
-    rotation_matrix = euler_to_rotation_matrix(euler_angles, order='ZYX')
+    rotation_matrix = euler_to_rotation_matrix(euler_angles, order='ZYX')  # Convert to rotation matrix (ZYX order)
     print("Rotation Matrix R (ZYX order):")
     print(rotation_matrix)
-    # Convert to rotation matrix with XYZ order
-    rotation_matrix_xyz = euler_to_rotation_matrix(euler_angles, order='XYZ')
+
+    rotation_matrix_xyz = euler_to_rotation_matrix(euler_angles, order='XYZ')  # Convert to rotation matrix (XYZ order)
     print("\nRotation Matrix R (XYZ order):")
     print(rotation_matrix_xyz)
 
-
-    file_path = calib_path + 'images/'
+    # Create a directory to save images if it doesn't exist
+    file_path = os.path.join(calib_path, 'images/')
     if not os.path.exists(file_path):
         os.makedirs(file_path)
 
-    if os.path.exists(calib_path + poses_txt_name + '.txt'):
-        userAction = input('Robot pose file already exist. Want to remove it? (y/n):')
-        while (userAction.lower() != 'y') and ((userAction.lower() != 'n')):
-            userAction = input('Robot pose file already exist. Want to remove it? (y/n):')
+    # Check if the poses file already exists and prompt user for action
+    poses_file_path = os.path.join(calib_path, f"{poses_txt_name}.txt")
+    if os.path.exists(poses_file_path):
+        userAction = input('Robot pose file already exists. Want to remove it? (y/n): ')
+        while userAction.lower() not in ['y', 'n']:
+            userAction = input('Robot pose file already exists. Want to remove it? (y/n): ')
 
         if userAction.lower() == 'y':
-            os.remove(calib_path + poses_txt_name + '.txt')
+            os.remove(poses_file_path)
         elif userAction.lower() == 'n':
-            poses_txt_name = input('Enter new name for Robot pose file:')
+            poses_txt_name = input('Enter a new name for the Robot pose file: ')
 
-    # ---------------------------------------------------
-
-
-    # -----------------------fresh reset ---------------------------------
+    # ----------------------- Fresh Reset ---------------------------------
     # Configure depth and color streams
     pipeline = rs.pipeline()
     config = rs.config()
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)  # Enable depth stream
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)  # Enable color stream
 
-    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-
-
-    print("resetting...")
+    print("Resetting...")
     ctx = rs.context()
     devices = ctx.query_devices()
     for dev in devices:
-        dev.hardware_reset()
-        time.sleep(4)
-    print("fresh reset done")
+        dev.hardware_reset()  # Reset device hardware
+        time.sleep(4)  # Wait for reset to complete
+    print("Fresh reset done")
 
-    # --------------------------------------------------------------------
-
-
-    # Get device product line for setting a supporting resolution
+    # Verify the device has a color sensor
     pipeline_wrapper = rs.pipeline_wrapper(pipeline)
     pipeline_profile = config.resolve(pipeline_wrapper)
     device = pipeline_profile.get_device()
@@ -80,73 +69,41 @@ if __name__ == "__main__":
             found_rgb = True
             break
     if not found_rgb:
-        print("The demo requires Depth camera with Color sensor")
+        print("The demo requires a Depth camera with a Color sensor")
         exit(0)
-
-
-    #config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
     # Start streaming
     pipeline.start(config)
 
-
-    MaxNrImages = 40
-    counter = 0
+    MaxNrImages = 40  # Maximum number of images to capture
+    counter = 0  # Initialize counter for saved images
 
     try:
-            while counter<MaxNrImages:
+        while counter < MaxNrImages:
+            userEntry = input('Enter the robot pose or (quit) to finish: ')
 
-                userValue = input('Enter the robot pose or (quit) for finish:')
+            if userEntry.lower() == 'quit':
+                break
 
-                if userValue.lower() == 'quit':
-                    break
+            # Write the robot pose to the text file
+            with open(poses_file_path, "a") as pose_file:
+                pose_file.write(userEntry + '\n')
 
-                # ------------------------ write the Robot pose in txt file --------
-                pose_file = open(calib_path + poses_txt_name + '.txt', "a")
-                pose_file.write(userValue + '\n')
-                pose_file.close()
-                # -----------------------------------------------------------------
+            # Wait for a coherent pair of frames: depth and color
+            frames = pipeline.wait_for_frames()
+            color_frame = frames.get_color_frame()  # Get color frame
 
-                # Wait for a coherent pair of frames: depth and color
-                frames = pipeline.wait_for_frames()
-                #depth_frame = frames.get_depth_frame()
-                color_frame = frames.get_color_frame()
-                #if not depth_frame or not color_frame:
+            # Convert the color frame to a numpy array
+            color_image = np.asanyarray(color_frame.get_data())
 
-                # Convert images to numpy arrays
-                #depth_image = np.asanyarray(depth_frame.get_data())
-                color_image = np.asanyarray(color_frame.get_data())
-                # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
-                #depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+            # Save the color image with a formatted counter
+            counter_str = "{:02}".format(counter)  # Format counter as two digits
+            cv2.imwrite(os.path.join(file_path, f"{counter_str}.png"), color_image)  # Save image
+            counter += 1
+            print(f"{file_path}{counter_str}.png saved.")
 
-                #depth_colormap_dim = depth_colormap.shape
-                color_colormap_dim = color_image.shape
-
-                # If depth and color resolutions are different, resize color image to match depth image for display
-                '''
-                if depth_colormap_dim != color_colormap_dim:
-                    resized_color_image = cv2.resize(color_image, dsize=(depth_colormap_dim[1], depth_colormap_dim[0]), interpolation=cv2.INTER_AREA)
-                    images = np.hstack((resized_color_image, depth_colormap))
-                else:
-                    images = np.hstack((color_image, depth_colormap))
-                '''
-
-                # Using cv2.imwrite() method
-                # Saving the image
-                #cv2.imwrite(file_path + file_name + '.png', color_image)
-                counter_str = "{:02}".format(counter)   # convert to string of 2 digits: "05.png"
-                cv2.imwrite(file_path + counter_str+'.png', color_image)
-                counter += 1
-                print(file_path + counter_str+'.png', 'saved.')
-                
-                # Show images
-                #cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
-                #cv2.imshow('RealSense', color_image)
-                #cv2.waitKey(1)
-            print('Process finished.')
+        print('Process finished.')
 
     finally:
-
-        # Stop streaming
+        # Stop streaming when done
         pipeline.stop()
