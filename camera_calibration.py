@@ -15,23 +15,15 @@ if __name__ == "__main__":
     and log robot poses to a text file.
     """
 
-    # Define Euler angles in radians for rotation matrix conversion
-    euler_angles = [np.radians(30), np.radians(45), np.radians(60)]  # Example angles
-    rotation_matrix = euler_to_rotation_matrix(euler_angles, order='ZYX')  # Convert to rotation matrix (ZYX order)
-    print("Rotation Matrix R (ZYX order):")
-    print(rotation_matrix)
-
-    rotation_matrix_xyz = euler_to_rotation_matrix(euler_angles, order='XYZ')  # Convert to rotation matrix (XYZ order)
-    print("\nRotation Matrix R (XYZ order):")
-    print(rotation_matrix_xyz)
-
     # Create a directory to save images if it doesn't exist
     file_path = os.path.join(calib_path, 'images/')
     if not os.path.exists(file_path):
         os.makedirs(file_path)
 
     # Check if the poses file already exists and prompt user for action
-    poses_file_path = os.path.join(calib_path, f"{poses_txt_name}.txt")
+    poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_6D.txt")
+    hom_poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_hom.txt")
+   
     if os.path.exists(poses_file_path):
         userAction = input('Robot pose file already exists. Want to remove it? (y/n): ')
         while userAction.lower() not in ['y', 'n']:
@@ -39,8 +31,12 @@ if __name__ == "__main__":
 
         if userAction.lower() == 'y':
             os.remove(poses_file_path)
+            if os.path.exists(hom_poses_file_path):
+                os.remove(hom_poses_file_path)
         elif userAction.lower() == 'n':
             poses_txt_name = input('Enter a new name for the Robot pose file: ')
+            poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_6D.txt")
+            hom_poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_hom.txt")
 
     # ----------------------- Fresh Reset ---------------------------------
     # Configure depth and color streams
@@ -55,7 +51,7 @@ if __name__ == "__main__":
     for dev in devices:
         dev.hardware_reset()  # Reset device hardware
         time.sleep(4)  # Wait for reset to complete
-    print("Fresh reset done")
+    print("Fresh reset done.\n")
 
     # Verify the device has a color sensor
     pipeline_wrapper = rs.pipeline_wrapper(pipeline)
@@ -78,14 +74,42 @@ if __name__ == "__main__":
     MaxNrImages = 40  # Maximum number of images to capture
     counter = 0  # Initialize counter for saved images
 
+    # Write a header for showing the format in robot pose file txt
+    with open(poses_file_path, "a") as pose_file:
+        pose_file.write('# posx, posy, posz, angle1, angle2, angle3' + '\n')
+    
+    with open(hom_poses_file_path, "a") as pose_file:
+        pose_file.write('# R11, R12, R13, posx,R21, R22, R23, posy, R31, R32, R33, posz, 0,0,0,1' + '\n')
+    
     try:
         while counter < MaxNrImages:
             userEntry = input('Enter the robot pose or (quit) to finish: ')
 
             if userEntry.lower() == 'quit':
                 break
+            
+            # Split the string into individual values
+            string_list = userEntry.split(',')
+            # Convert each value to a float
+            float_list = [float(value) for value in string_list]
+            position_float = float_list[0:3]
+            angles_float = float_list[3:]
 
-            # Write the robot pose to the text file
+        #    R11, R12, R13, posx,R21, R22, R23, posy, R31, R32, R33, posz, 0,0,0,1 
+
+            # Convert angles to rotation matrix with ZYX order
+            rotation_matrix = euler_to_rotation_matrix(angles_float, order='ZYX')   # use 'ZYX' or 'XYZ'
+            #print(rotation_matrix)
+            robot_pose_hom = [rotation_matrix[0,0] , rotation_matrix[0,1] , rotation_matrix[0,2], position_float[0],
+                              rotation_matrix[1,0] , rotation_matrix[1,1] , rotation_matrix[1,2], position_float[1],
+                              rotation_matrix[2,0] , rotation_matrix[2,1] , rotation_matrix[2,2], position_float[2],
+                                        0,                  0,                      0,                  1           ]
+
+            # Write the robot pose to the text file (homogenous format)
+            with open(hom_poses_file_path, "a") as pose_file:
+                pose_file.write(str(robot_pose_hom) + '\n')
+
+            # Write the robot pose to the text file (6D format)
             with open(poses_file_path, "a") as pose_file:
                 pose_file.write(userEntry + '\n')
 
