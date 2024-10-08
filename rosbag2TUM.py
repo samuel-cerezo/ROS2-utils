@@ -37,7 +37,7 @@ def extract_and_save_images(reader, typestore, rgb_path, depth_path, topics):
     Returns:
         int: The total number of processed messages.
     """
-    msg_count = 0
+    msg_count = 0    
 
     for connection, timestamp, rawdata in reader.messages():
         # Process color images
@@ -117,8 +117,8 @@ def main(rosbag_path, output_dir):
 
 if __name__ == "__main__":
     # Define the path to the ROSBAG file and output directory
-    rosbag_path = "/home/samuel/Desktop/d435_test1"
-    output_dir = "/home/samuel/Desktop/d435_test2_data"
+    rosbag_path = "/home/samuel/Desktop/samuel_test2"
+    output_dir = "/home/samuel/Desktop/samuel_test2_data"
     
     # Call the main function
     main(rosbag_path, output_dir)
