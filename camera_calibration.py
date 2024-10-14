@@ -1,6 +1,7 @@
 import pyrealsense2 as rs
 import numpy as np
 import cv2
+import math
 import os
 import time
 from include.transformations import euler_to_rotation_matrix  # Import custom transformation functions
@@ -108,7 +109,7 @@ def capture_images(pipeline, file_path, poses_file_path, hom_poses_file_path, ma
     with open(poses_file_path, "a") as pose_file:
         pose_file.write('# posx, posy, posz, angle1, angle2, angle3\n')
     with open(hom_poses_file_path, "a") as pose_file:
-        pose_file.write('# R11, R12, R13, posx,R21, R22, R23, posy, R31, R32, R33, posz, 0,0,0,1\n')
+        pose_file.write('# R11, R12, R13, posX, R21, R22, R23, posY, R31, R32, R33, posZ, 0,0,0,1\n')
 
     try:
         while counter < max_images:
@@ -121,13 +122,12 @@ def capture_images(pipeline, file_path, poses_file_path, hom_poses_file_path, ma
             try:
                 float_list = [float(value) for value in user_entry.split(',')]
                 position_float = float_list[:3]
-                angles_float = float_list[3:]
+                angles_d_float = float_list[3:]
             except ValueError:
                 print("Invalid input. Please enter valid numbers separated by commas.")
                 continue
-
-            # Convert angles to rotation matrix
-            rotation_matrix = euler_to_rotation_matrix(angles_float, order='ZYX')
+            
+            rotation_matrix = euler_to_rotation_matrix(angles_d_float, order='ZYX')
 
             # Prepare the homogeneous pose list
             robot_pose_hom = [
@@ -140,6 +140,7 @@ def capture_images(pipeline, file_path, poses_file_path, hom_poses_file_path, ma
             # Write the robot pose to the text files
             with open(poses_file_path, "a") as pose_file:
                 pose_file.write(user_entry + '\n')
+
             with open(hom_poses_file_path, "a") as pose_file:
                 pose_file.write(str(robot_pose_hom) + '\n')
 
@@ -163,14 +164,14 @@ if __name__ == "__main__":
     Main execution block to capture images from a RealSense camera and log robot poses.
     """
     # Set calibration folder path and file names
-    calib_path = '/home/samuel/Desktop/d435_calibration/'
+    calib_path = '/home/samuel/Desktop/d435i_calibration/'
     poses_txt_name = 'robot_poses'
 
     # Prepare directories and file paths
     image_folder = create_directories(calib_path)
     poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_6D.txt")
-    hom_poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_hom.txt")
-    poses_file_path, hom_poses_file_path = check_pose_files(poses_file_path, hom_poses_file_path)
+    hom_poses_file_path = os.path.join(calib_path, f"{poses_txt_name}.txt")
+     #poses_file_path, hom_poses_file_path = check_pose_files(poses_file_path, hom_poses_file_path)
 
     # Reset and configure the device
     pipeline, config = reset_device()
@@ -180,3 +181,4 @@ if __name__ == "__main__":
         # Start capturing images
         pipeline.start(config)
         capture_images(pipeline, image_folder, poses_file_path, hom_poses_file_path)
+
