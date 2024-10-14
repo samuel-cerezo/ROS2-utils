@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 def euler_to_rotation_matrix(euler_angles, order='ZYX'):
     """
@@ -11,14 +12,15 @@ def euler_to_rotation_matrix(euler_angles, order='ZYX'):
                                         - angle1: Yaw (rotation around z-axis)
                                         - angle2: Pitch (rotation around y-axis)
                                         - angle3: Roll (rotation around x-axis)
-    order (str): The order of rotations. Supported orders are 'ZYX', 'XYZ', 'YXZ', etc.
+    order (str): The order of rotations. Supported orders are 'ZYX' or 'XYZ'.
 
     Returns:
     np.ndarray: A 3x3 rotation matrix corresponding to the input Euler angles.
     """
-    
+
+    radians_angles = [deg * (math.pi / 180) for deg in euler_angles]
     # Unpack Euler angles
-    angle1, angle2, angle3 = euler_angles
+    angle1, angle2, angle3 = radians_angles
 
     # Initialize rotation matrices
     R = np.eye(3)  # Start with the identity matrix
