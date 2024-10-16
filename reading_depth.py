@@ -2,6 +2,8 @@ import cv2
 import os
 import numpy as np
 
+# the idea is read the depth values in mm
+
 def create_paths(base_path, folder_name):
     """
     Generate file paths for RGB and depth data.
