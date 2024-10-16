@@ -27,7 +27,7 @@ def extract_transformation_matrices(data):
 
 def main():
     # Path to the cleaned YAML file
-    yaml_file = 'transformations.yaml'
+    yaml_file = 'calibration/transformations.yaml'
     
     # Read the YAML file
     data = read_yaml(yaml_file)
