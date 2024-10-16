@@ -44,7 +44,7 @@ def check_pose_files(poses_file_path, hom_poses_file_path):
         elif user_action == 'n':
             new_name = input('Enter a new name for the pose file: ').strip()
             poses_file_path = os.path.join(os.path.dirname(poses_file_path), f"{new_name}_6D.txt")
-            hom_poses_file_path = os.path.join(os.path.dirname(hom_poses_file_path), f"{new_name}_hom.txt")
+            hom_poses_file_path = os.path.join(os.path.dirname(hom_poses_file_path), f"{new_name}.txt")
     return poses_file_path, hom_poses_file_path
 
 
@@ -181,4 +181,3 @@ if __name__ == "__main__":
         # Start capturing images
         pipeline.start(config)
         capture_images(pipeline, image_folder, poses_file_path, hom_poses_file_path)
-
