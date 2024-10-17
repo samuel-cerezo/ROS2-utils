@@ -47,21 +47,17 @@ def extract_transformation_matrices(yaml_file):
         source_frame = transformation['source_frame']
         destination_frame = transformation['destination_frame']
         matrix_data = transformation['matrix']['data']
-        
         # Create a unique variable name based on source and destination frames
         variable_name = f"{source_frame}_to_{destination_frame}".replace('-', '_')  # Replace any dashes with underscores
         matrix_array = np.array(matrix_data).reshape(4, 4)
-
         T_matrices[variable_name] = matrix_array
 
     return T_matrices  # Return a dictionary. Every transformation matrix is saved with a key-value correspondence.
 
 
 def main():
-    # Path to the cleaned YAML file
     # yaml_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml'
     yaml_file = '/Users/samucerezo/dev/src/my-github/KUKA/calibration/transformations.yaml'
-
     # Extract transformation matrices and save in a dictionary
     T = extract_transformation_matrices(yaml_file)
 
