@@ -29,7 +29,8 @@ def extract_transformation_matrices(data):
 
 def main():
     # Path to the cleaned YAML file
-    yaml_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml'
+   # yaml_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml'
+    yaml_file = '/Users/samucerezo/dev/src/my-github/KUKA/calibration/transformations.yaml'
     current_directory = os.getcwd()
 
     # Read the YAML file
@@ -42,6 +43,10 @@ def main():
     for T in transformation_matrices:
         print(f"Transformation from {T['source_frame']} to {T['destination_frame']}:")
         print(T['matrix'], "\n")
+        matrix_data = T['matrix']
+        # Convert to NumPy array and reshape to 4x4
+        matrix_array = np.array(matrix_data).reshape(4, 4)
+        transformation_matrices.append(matrix_array)
 
 if __name__ == "__main__":
 
