@@ -1,17 +1,12 @@
 # Typical transformations between the camera's optical, IMU, and infrared frames.
 
 # Explanation:
-#             - parent_frame: The source frame (e.g., the camera's color optical frame).
-#             - child_frame: The destination frame (e.g., depth, IMU, or infrared frames).
-#             - matrix: A 4x4 transformation matrix representing the pose and transformation from the parent frame to the child frame. 
+#             - matrix: A 4x4 transformation matrix representing the pose and transformation from the source frame to the destination frame. 
 # All values in mm
 
-
-
-
 T:
-  - parent_frame: d400_color_optical_frame
-    child_frame: robot_flench
+  - source_frame: color_optical
+    destination_frame: robot_flange
     matrix:
       rows: 4
       cols: 4
@@ -21,8 +16,20 @@ T:
             0.0192076,   -0.0126642,     0.999735,      44.6762,
             0,            0,            0,            1]
 
-  - parent_frame: d400_color_optical_frame
-    child_frame: d400_accelerometer
+  # Obtained by the CAD model
+  - source_frame: mocap_markers
+    destination_frame: robot_flange
+    matrix:
+      rows: 4
+      cols: 4
+      dt: d
+      data: [1, 0, 0,   0,
+             0, 1, 0,   0,
+             0, 0, 1, 18.60,  # 14.1mm + 4.5mm
+             0, 0, 0,   1]    
+
+  - source_frame: color_optical
+    destination_frame: accelerometer
     matrix:
       rows: 4
       cols: 4
@@ -35,81 +42,33 @@ T:
              9.9907145514884321e-01, 9.1998145905600004e-01, 0., 0., 0.,
              1. ]
 
-  - parent_frame: "d435i_color_optical_frame"
-    child_frame: "d435i_depth_optical_frame"
+  - source_frame: color_optical
+    destination_frame: depth_optical
     matrix:
       rows: 4
       cols: 4
-      data: [0.9999, 0.0023, 0.0051, 15.6,      # Converted from 0.0156 meters to 15.6 mm
-             -0.0022, 0.9999, -0.0019, 0.3,     # Converted from 0.0003 meters to 0.3 mm
-             -0.0051, 0.0018, 0.9999, 0.2,      # Converted from 0.0002 meters to 0.2 mm
+      data: [0.9999, 0.0023, 0.0051, 15.6,      # 15.6 mm
+             -0.0022, 0.9999, -0.0019, 0.3,     #  0.3 mm
+             -0.0051, 0.0018, 0.9999, 0.2,      #  0.2 mm
              0.0, 0.0, 0.0, 1.0]
 
-  - parent_frame: "d435i_color_optical_frame"
-    child_frame: "d435i_imu_accel_frame"
+  - source_frame: color_optical
+    destination_frame: imu_accel
     matrix:
       rows: 4
       cols: 4
-      data: [1.0000, 0.0000, 0.0000, 20.0,      # Converted from 0.02 meters to 20 mm
+      data: [1.0000, 0.0000, 0.0000, 20.0,      #  20 mm
              0.0000, 1.0000, 0.0000, 0.0,
-             0.0000, 0.0000, 1.0000, 10.0,      # Converted from 0.01 meters to 10 mm
+             0.0000, 0.0000, 1.0000, 10.0,      # 10 mm
              0.0, 0.0, 0.0, 1.0]
 
-  - parent_frame: "d435i_color_optical_frame"
-    child_frame: "d435i_imu_gyro_frame"
+  - source_frame: color_optical
+    destination_frame: imu_gyro
     matrix:
       rows: 4
       cols: 4
-      data: [0.9999, 0.0016, 0.0031, 16.0,      # Converted from 0.016 meters to 16 mm
-             -0.0015, 0.9999, -0.0020, 2.0,     # Converted from 0.002 meters to 2 mm
-             -0.0030, 0.0019, 0.9999, 2.0,      # Converted from 0.002 meters to 2 mm
+      data: [0.9999, 0.0016, 0.0031, 16.0,      #  16 mm
+             -0.0015, 0.9999, -0.0020, 2.0,     # 2 mm
+             -0.0030, 0.0019, 0.9999, 2.0,      #  2 mm
              0.0, 0.0, 0.0, 1.0]
 
-  - parent_frame: "d435i_depth_optical_frame"
-    child_frame: "d435i_infra1_optical_frame"
-    matrix:
-      rows: 4
-      cols: 4
-      data: [1.0000, 0.0000, 0.0000, 25.0,      # Converted from 0.025 meters to 25 mm
-             0.0000, 1.0000, 0.0000, 0.0,
-             0.0000, 0.0000, 1.0000, 10.0,      # Converted from 0.01 meters to 10 mm
-             0.0, 0.0, 0.0, 1.0]
-
-  - parent_frame: "d435i_depth_optical_frame"
-    child_frame: "d435i_infra2_optical_frame"
-    matrix:
-      rows: 4
-      cols: 4
-      data: [1.0000, 0.0000, 0.0000, 30.0,      # Converted from 0.030 meters to 30 mm
-             0.0000, 1.0000, 0.0000, 0.0,
-             0.0000, 0.0000, 1.0000, 15.0,      # Converted from 0.015 meters to 15 mm
-             0.0, 0.0, 0.0, 1.0]
-
-# ---------------------------- add the additional transf_matrices
-#  - parent_frame: base_link
-#    child_frame: d400_color_optical_frame
-#    matrix:
-#      rows: 4
-#      cols: 4
-#      dt: d
-#      data: [ 9.9792816252667338e-03, 6.5348103708624539e-03,
-#             9.9992885256485176e-01, 2.2648368490900000e-01,
-#             -9.9982014658446139e-01, 1.6192923276330706e-02,
-#             9.8723715283343672e-03, -5.1141940356500000e-02,
-#             -1.6127257115523985e-02, -9.9984753112121250e-01,
-#             6.6952288046080444e-03, 9.1600000000000004e-01, 0., 0., 0.,
-#             1. ]
-
-#  - parent_frame: base_link
-#    child_frame: marker
-#    matrix:
-#      rows: 4
-#      cols: 4
-#      dt: d
-#      data: [ -1.5236439840782268e-03, 9.9996130930028815e-01,
-#             -8.6636257688974989e-03, 1.7731624201300000e-01,
-#             -9.9910723467375884e-01, -1.8879955628161582e-03,
-#             -4.2203899053398691e-02, -8.3151295239100004e-02,
-#             -4.2218623042023312e-02, 8.5915874673141400e-03,
-#             9.9907145514884321e-01, 9.1998145905600004e-01, 0., 0., 0.,
-#             1. ]
