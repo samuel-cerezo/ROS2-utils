@@ -204,9 +204,9 @@ def list_topics(reader):
 def main(rosbag_path, output_dir):
 
     topics = {
-        'color_images': ' ',        # 'color_images': '/camera/camera/color/image_raw',
+        'color_images': ' ',        #need to be complete, for example... 'color_images': '/camera/camera/color/image_raw',
         'rgbd':'/camera/camera/rgbd',
-        'depth_images': ' ',        #'/camera/camera/aligned_depth_to_color/image_raw'
+        'depth_images': ' ',        # '/camera/camera/aligned_depth_to_color/image_raw'
         'joint_states': '/joint_states', 
         'imu': '/camera/camera/imu'  # IMU topic corrected to the proper path
     }
