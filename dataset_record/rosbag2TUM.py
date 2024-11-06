@@ -100,10 +100,7 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
     depth_timestamps = []
 
     # Create joint and IMU data files
-    #if topics['joint_states'] in available_topics:
     position_file, velocity_file, effort_file = create_joint_data_files(joint_data_path)
-
-    #if topics['imu'] in available_topics:
     imu_file = create_imu_data_file(imu_data_path)
 
     for connection, timestamp, rawdata in reader.messages():
@@ -204,18 +201,17 @@ def list_topics(reader):
 def main(rosbag_path, output_dir):
 
     topics = {
-        'color_images': ' ',        # 'color_images': '/camera/camera/color/image_raw',
-        'rgbd':'/camera/camera/rgbd',
-        'depth_images': ' ',        #'/camera/camera/aligned_depth_to_color/image_raw'
+        'color_images': ' ',        #need to be complete, for example... 'color_images': '/camera/camera/color/image_raw',
+        'rgbd':'/camera/camera/rgbd',   # delete if it is not needed
+        'depth_images': ' ',        # need to be complete, for example... '/camera/camera/aligned_depth_to_color/image_raw'
         'joint_states': '/joint_states', 
         'imu': '/camera/camera/imu'  # IMU topic corrected to the proper path
     }
 
+    # this is for RGBD topic
     path_to_RGBDmsg = '/home/samuel/dev/ros2_ws/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg'
-    
     typestore = load_custom_types(path_to_RGBDmsg)  # Load RGBD message types
 
-    
     try:
         with Reader(rosbag_path) as reader:
             available_topics = list_topics(reader)
