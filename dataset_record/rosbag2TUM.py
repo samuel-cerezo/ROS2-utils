@@ -104,7 +104,9 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
     imu_file = create_imu_data_file(imu_data_path)
 
     for connection, timestamp, rawdata in reader.messages():
-        
+
+        timestamp = timestamp/1e9   # convert the time: nanosec -> sec
+
         # Save color image
         if connection.topic == topics['color_images']:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
@@ -139,14 +141,14 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
             depth_image_msg = msg.depth  # The depth image data
             # rgb image
             rgb_image_cv = image_to_cvimage(rgb_image_msg, 'bgr8')
-            rgb_img_name = f'{timestamp}.png'
+            rgb_img_name = f'{timestamp:.9f}.png'
             cv2.imwrite(os.path.join(rgb_path, rgb_img_name), rgb_image_cv)
             print(f"Saved RGB image: {rgb_img_name}")
             rgb_timestamps.append(timestamp)
 
             # depth image
             depth_img_cv = image_to_cvimage(depth_image_msg)
-            depth_img_name = f'{timestamp}.png'
+            depth_img_name = f'{timestamp:.9f}.png'
             cv2.imwrite(os.path.join(depth_path, depth_img_name), depth_img_cv)
             print(f"Saved Depth image: {depth_img_name}")
             depth_timestamps.append(timestamp)
@@ -172,7 +174,7 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
                 accel_data = (msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z)
                 gyro_data = (msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z)
                 write_imu_data(imu_file, timestamp, accel_data, gyro_data)
-                print(f"Saved IMU data at timestamp: {timestamp}")
+                print(f"Saved IMU data at timestamp: {timestamp:.9f}")
 
         msg_count += 1
 
@@ -181,12 +183,22 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
 # Function to create associations file
 def create_associations_file(output_dir, associations):
     associations_path = os.path.join(output_dir, 'associations.txt')
-    assoc_header = "rgb_timestamp rgb_file depth_timestamp depth_file\n"
+    assoc_header = "#rgb_timestamp rgb_file depth_timestamp depth_file\n"
+    with open(associations_path, 'w') as f:
+        f.write(assoc_header)
+        for rgb_ts, depth_ts in associations:
+            # Formatear los timestamps con precisión de 9 decimales
+            rgb_ts_sec = f"{rgb_ts:.9f}"
+            depth_ts_sec = f"{depth_ts:.9f}"
+            f.write(f"{rgb_ts_sec} rgb/{rgb_ts_sec}.png {depth_ts_sec} depth/{depth_ts_sec}.png\n")
+    print(f"\nAssociations file created at: {associations_path}")
+    '''
     with open(associations_path, 'w') as f:
         f.write(assoc_header)
         for rgb_ts, depth_ts in associations:
             f.write(f"{rgb_ts} rgb/{rgb_ts}.png {depth_ts} depth/{depth_ts}.png\n")
     print(f"\nAssociations file created at: {associations_path}")
+    '''
 
 # Function to list available topics in ROSBAG
 def list_topics(reader):
@@ -209,7 +221,9 @@ def main(rosbag_path, output_dir):
     }
 
     # this is for RGBD topic
-    path_to_RGBDmsg = '/home/samuel/dev/ros2_ws/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg'
+    # path_to_RGBDmsg = '/home/samuel/dev/ros2_ws/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg'
+    path_to_RGBDmsg = '/home/samuel/dev/ros2_ws/src/realsense-ros/realsense2_camera_msgs/msg/RGBD.msg'
+    path_to_RGBDmsg = '/home/samuel/ros2_realsenseWS/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg'
     typestore = load_custom_types(path_to_RGBDmsg)  # Load RGBD message types
 
     try:
@@ -234,5 +248,5 @@ def main(rosbag_path, output_dir):
 
 if __name__ == "__main__":
     rosbag_path = "/home/samuel/Desktop/bag_test"
-    output_dir = "/home/samuel/Desktop/bag_test_data"
+    output_dir = "/home/samuel/Desktop/bag_test_dataEPOCH"
     main(rosbag_path, output_dir)
