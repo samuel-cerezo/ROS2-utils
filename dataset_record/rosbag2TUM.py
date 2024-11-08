@@ -248,5 +248,5 @@ def main(rosbag_path, output_dir):
 
 if __name__ == "__main__":
     rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/jarvis_mockup_3"
-    output_dir = "//home/samuel/dev/environment_modeling/ROSBAGS/jarvis_mockup_3_dataEPOCH"
+    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/jarvis_mockup_3_data"
     main(rosbag_path, output_dir)
