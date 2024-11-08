@@ -55,7 +55,7 @@ def create_joint_data_files(joint_data_path):
     velocity_file = os.path.join(joint_data_path, 'joint_velocities.txt')
     effort_file = os.path.join(joint_data_path, 'joint_efforts.txt')
     
-    header = "timestamp A1 A2 A3 A4 A5 A6\n"
+    header = "#timestamp A1 A2 A3 A4 A5 A6\n"
     for file_path in [position_file, velocity_file, effort_file]:
         with open(file_path, 'w') as f:
             f.write(header)
@@ -66,7 +66,7 @@ def create_joint_data_files(joint_data_path):
 def create_imu_data_file(joint_data_path):
     imu_file = os.path.join(joint_data_path, 'imu_data.txt')
     
-    imu_header = "timestamp accel_x(m/s^2) accel_y(m/s^2) accel_z(m/s^2) gyro_x(rad/s) gyro_y(rad/s) gyro_z(rad/s)\n"
+    imu_header = "#timestamp accel_x(m/s^2) accel_y(m/s^2) accel_z(m/s^2) gyro_x(rad/s) gyro_y(rad/s) gyro_z(rad/s)\n"
     with open(imu_file, 'w') as f:
         f.write(imu_header)
     
@@ -247,6 +247,6 @@ def main(rosbag_path, output_dir):
         print(f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    rosbag_path = "/home/samuel/Desktop/bag_test"
-    output_dir = "/home/samuel/Desktop/bag_test_dataEPOCH"
+    rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/jarvis_mockup_3"
+    output_dir = "//home/samuel/dev/environment_modeling/ROSBAGS/jarvis_mockup_3_dataEPOCH"
     main(rosbag_path, output_dir)
