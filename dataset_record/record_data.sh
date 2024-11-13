@@ -14,7 +14,7 @@ topic_rgbd_syncro="/camera/camera/rgbd"
 ros_ws="$HOME/dev/environment_modeling"
 yaml_filename = "config"
 bag_file_path="$HOME/Desktop"
-bag_file_name="bag_test"
+bag_file_name="dataset_rosbag"
 
 # Function to handle errors
 error_exit() {

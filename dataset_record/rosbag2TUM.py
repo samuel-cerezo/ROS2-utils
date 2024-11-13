@@ -76,14 +76,15 @@ def create_imu_data_file(joint_data_path):
 def write_joint_data(file_path, timestamp, data):
     with open(file_path, 'a') as f:
         data_str = ' '.join(map(str, data))
-        f.write(f"{timestamp} {data_str}\n")
+        f.write(f"{timestamp:.9f} {data_str}\n")
+                
 
 # Function to write IMU data
 def write_imu_data(imu_file, timestamp, accel_data, gyro_data):
     accel_str = ' '.join(map(str, accel_data))
     gyro_str = ' '.join(map(str, gyro_data))
     with open(imu_file, 'a') as f:
-        f.write(f"{timestamp} {accel_str} {gyro_str}\n")
+        f.write(f"{timestamp:.9f} {accel_str} {gyro_str}\n")
 
 # Function to find closest timestamps
 def find_closest_timestamps(rgb_timestamps, depth_timestamps):
@@ -247,6 +248,6 @@ def main(rosbag_path, output_dir):
         print(f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/jarvis_mockup_3"
-    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/jarvis_mockup_3_data"
+    rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion"
+    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_data"
     main(rosbag_path, output_dir)
