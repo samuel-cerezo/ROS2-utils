@@ -41,7 +41,7 @@ class RobotPosePublisher(Node):
         self.joint_index = 0
 
         # Timer to run periodically
-        self.timer = self.create_timer(0.1, self.publish_pose_from_joint_data)
+        self.timer = self.create_timer(1, self.publish_pose_from_joint_data)
 
     def publish_pose_from_joint_data(self):
         if self.joint_index < len(self.joint_data_lines):
@@ -57,7 +57,7 @@ class RobotPosePublisher(Node):
             joint_angles = list(map(float, joint_values[1:]))  # The rest are joint angles
 
             # Log joint values and timestamp
-            self.get_logger().info(f"Publishing joint values: {joint_angles} at timestamp {timestamp}")
+            self.get_logger().info(f"Publishing joint values: {joint_angles} at timestamp {timestamp:.9f}")
 
             # Publish the joint values to control the robot's motion
             self.publish_joint_commands(joint_angles)
@@ -66,7 +66,7 @@ class RobotPosePublisher(Node):
             time.sleep(0.1)  # Time to wait for the robot to reach the desired joint position
 
             # Get the transformation matrix for this timestamp using tool0 and base_link
-            self.get_logger().info(f"Retrieving pose at timestamp {timestamp}")
+            self.get_logger().info(f"Retrieving pose at timestamp {timestamp:.9f}")
             self.query_pose(timestamp)
 
             # Increment joint index to move to the next set of joint values
@@ -146,8 +146,8 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Define the paths for joint positions and pose data
-    joint_positions_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_data/joint_data/joint_positions.txt'
-    pose_file_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_data/pose_data.txt'
+    joint_positions_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_planar_motion_data/joint_data/joint_positions.txt'
+    pose_file_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_planar_motion_data/pose_data.txt'
 
     # Initialize the RobotPosePublisher with the file paths
     robot_pose_publisher = RobotPosePublisher(joint_positions_path, pose_file_path)
