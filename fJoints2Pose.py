@@ -3,7 +3,6 @@ import tf2_ros
 from geometry_msgs.msg import TransformStamped
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
-import math
 import time
 import numpy as np
 
@@ -31,21 +30,22 @@ class RobotPosePublisher(Node):
             10
         )
 
-        # Publish and record poses at regular intervals
-        self.timer = self.create_timer(0.1, self.publish_pose_from_joint_data)
-
         # Read all joint data lines at the start
         self.joint_data_lines = self.joint_file.readlines()
         self.joint_index = 0
 
+        # Timer to run periodically
+        self.timer = self.create_timer(0.1, self.publish_pose_from_joint_data)
+
     def publish_pose_from_joint_data(self):
         if self.joint_index < len(self.joint_data_lines):
             joint_line = self.joint_data_lines[self.joint_index].strip()
+            
             # Skip comments (lines starting with '#')
             if joint_line.startswith('#'):
                 self.joint_index += 1
                 return
-            
+
             joint_values = joint_line.split()
             timestamp = float(joint_values[0])  # First value is the timestamp
             joint_angles = list(map(float, joint_values[1:]))  # The rest are joint angles
@@ -56,11 +56,15 @@ class RobotPosePublisher(Node):
             # Publish the joint values to control the robot's motion
             self.publish_joint_commands(joint_angles)
 
+            # Wait for the robot to reach the position (Adjust the sleep time as needed)
+            time.sleep(0.1)  # Time to wait for the robot to reach the desired joint position
+
             # Get the transformation matrix for this timestamp using tool0 and base_link
             self.get_logger().info(f"Retrieving pose at timestamp {timestamp}")
             self.query_pose(timestamp)
 
-            self.joint_index += 1  # Move to the next joint data line
+            # Increment joint index to move to the next set of joint values
+            self.joint_index += 1
         else:
             # Once all joint data has been processed, shutdown the node
             self.get_logger().info("All joint data processed. Shutting down.")
@@ -70,7 +74,7 @@ class RobotPosePublisher(Node):
         """Publishes joint commands to the robot to move it."""
         msg = Float64MultiArray()
         
-        # You can modify this to publish your desired joint values. For now, we publish the angles read from the file.
+        # Publish the joint angles read from the file
         msg.data = joint_angles
 
         # Publish the joint command
@@ -136,8 +140,8 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Define the paths for joint positions and pose data
-    joint_positions_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_data/joint_data/joint_positions.txt'
-    pose_file_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_data/pose_data.txt'
+    joint_positions_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_planar_motion_data/joint_data/joint_positions.txt'
+    pose_file_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_planar_motion_data/pose_data.txt'
 
     # Initialize the RobotPosePublisher with the file paths
     robot_pose_publisher = RobotPosePublisher(joint_positions_path, pose_file_path)
