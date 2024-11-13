@@ -5,6 +5,7 @@ from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
 import time
 import numpy as np
+import os
 
 class RobotPosePublisher(Node):
     def __init__(self, joint_positions_path, pose_file_path):
@@ -15,6 +16,11 @@ class RobotPosePublisher(Node):
         # Paths for joint positions file and pose output
         self.joint_positions_path = joint_positions_path
         self.pose_file_path = pose_file_path
+
+        # Check if the pose file already exists. If it does, remove it.
+        if os.path.exists(self.pose_file_path):
+            self.get_logger().info(f"Pose file {self.pose_file_path} exists. Replacing it.")
+            os.remove(self.pose_file_path)
 
         # Open files for reading joint data and saving pose data
         self.joint_file = open(self.joint_positions_path, 'r')
@@ -140,8 +146,8 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Define the paths for joint positions and pose data
-    joint_positions_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_planar_motion_data/joint_data/joint_positions.txt'
-    pose_file_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_planar_motion_data/pose_data.txt'
+    joint_positions_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_data/joint_data/joint_positions.txt'
+    pose_file_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_data/pose_data.txt'
 
     # Initialize the RobotPosePublisher with the file paths
     robot_pose_publisher = RobotPosePublisher(joint_positions_path, pose_file_path)
