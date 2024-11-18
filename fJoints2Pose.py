@@ -26,6 +26,9 @@ class RobotPosePublisher(Node):
         self.joint_file = open(self.joint_positions_path, 'r')
         self.pose_file = open(self.pose_file_path, 'a')
 
+        # Read the header to get the joint names and order
+        self.joint_header = self.read_joint_header()
+
         # Add header to pose file only once
         self.header_written = False
 
@@ -41,7 +44,20 @@ class RobotPosePublisher(Node):
         self.joint_index = 0
 
         # Timer to run periodically
-        self.timer = self.create_timer(1, self.publish_pose_from_joint_data)
+        self.timer = self.create_timer(0.2, self.publish_pose_from_joint_data)
+
+    def read_joint_header(self):
+        """Reads the joint header to determine the joint names and order."""
+        header_line = self.joint_file.readline().strip()  # Read the first line (header)
+        
+        # Split the line and remove the timestamp
+        header_values = header_line.split()
+        if header_values[0] == "#timestamp":
+            joint_names = header_values[1:]  # Everything after '#timestamp' is the joint names
+            self.get_logger().info(f"Detected joint header: {joint_names}")
+            return joint_names
+        else:
+            raise ValueError("Invalid header format. The header should start with '#timestamp'.")
 
     def publish_pose_from_joint_data(self):
         if self.joint_index < len(self.joint_data_lines):
@@ -56,11 +72,15 @@ class RobotPosePublisher(Node):
             timestamp = float(joint_values[0])  # First value is the timestamp
             joint_angles = list(map(float, joint_values[1:]))  # The rest are joint angles
 
-            # Log joint values and timestamp
-            self.get_logger().info(f"Publishing joint values: {joint_angles} at timestamp {timestamp:.9f}")
+            # Log joint values and timestamp using joint names from the header
+            joint_log = ", ".join([f"{joint_name}: {angle}" for joint_name, angle in zip(self.joint_header, joint_angles)])
+            self.get_logger().info(f"Publishing joint values at timestamp {timestamp:.9f}: {joint_log}")
+
+            # Reorder joint angles to match the order joint1, joint2, ..., joint6
+            ordered_joint_angles = self.reorder_joint_angles(joint_angles)
 
             # Publish the joint values to control the robot's motion
-            self.publish_joint_commands(joint_angles)
+            self.publish_joint_commands(ordered_joint_angles)
 
             # Wait for the robot to reach the position (Adjust the sleep time as needed)
             time.sleep(0.1)  # Time to wait for the robot to reach the desired joint position
@@ -76,11 +96,25 @@ class RobotPosePublisher(Node):
             self.get_logger().info("All joint data processed. Shutting down.")
             rclpy.shutdown()
 
+    def reorder_joint_angles(self, joint_angles):
+        """Reorders the joint angles to match the order joint1, joint2, ..., joint6."""
+        # Create a mapping of the correct joint order
+        joint_order = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
+
+        # Create a dictionary with joint names as keys and their respective angles as values
+        joint_dict = dict(zip(self.joint_header, joint_angles))
+
+        # Reorder the joint angles based on the correct order
+        ordered_angles = [joint_dict[joint] for joint in joint_order]
+
+        self.get_logger().info(f"Ordered joint angles: {ordered_angles}")
+        return ordered_angles
+
     def publish_joint_commands(self, joint_angles):
         """Publishes joint commands to the robot to move it."""
         msg = Float64MultiArray()
         
-        # Publish the joint angles read from the file
+        # Publish the joint angles in the correct order
         msg.data = joint_angles
 
         # Publish the joint command
@@ -142,6 +176,8 @@ class RobotPosePublisher(Node):
         self.joint_file.close()
         self.pose_file.close()
 
+
+# -----------------------------------------------------------------------------------------------------
 def main(args=None):
     rclpy.init(args=args)
 

@@ -50,12 +50,16 @@ def create_output_directories(base_dir, available_topics, topics):
     return rgb_path, depth_path, joint_data_path, imu_data_path
 
 # Function to create joint data files
-def create_joint_data_files(joint_data_path):
+def create_joint_data_files(joint_data_path, joint_header):
     position_file = os.path.join(joint_data_path, 'joint_positions.txt')
     velocity_file = os.path.join(joint_data_path, 'joint_velocities.txt')
     effort_file = os.path.join(joint_data_path, 'joint_efforts.txt')
     
-    header = "#timestamp A1 A2 A3 A4 A5 A6\n"
+    # Create the joint header string
+    joint_header = ' '.join(joint_header)
+    # Now use it in the header
+    header = f"#timestamp {joint_header} \n"
+
     for file_path in [position_file, velocity_file, effort_file]:
         with open(file_path, 'w') as f:
             f.write(header)
@@ -95,13 +99,12 @@ def find_closest_timestamps(rgb_timestamps, depth_timestamps):
     return associations
 
 # Function to extract and save data from the ROSBAG
-def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_path, imu_data_path, available_topics, topics):
+def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_path, imu_data_path, available_topics, topics, joints_header_written):
     msg_count = 0    
     rgb_timestamps = []
     depth_timestamps = []
 
-    # Create joint and IMU data files
-    position_file, velocity_file, effort_file = create_joint_data_files(joint_data_path)
+    # Create IMU data files
     imu_file = create_imu_data_file(imu_data_path)
 
     for connection, timestamp, rawdata in reader.messages():
@@ -158,6 +161,11 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
         # Save joint states
         if connection.topic == topics['joint_states']:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+            if (joints_header_written == False):
+                joint_header = msg.name
+                position_file, velocity_file, effort_file = create_joint_data_files(joint_data_path,joint_header)
+                joints_header_written = True
+
             if hasattr(msg, 'position') and len(msg.position) > 0:
                 # Create a dictionary that maps the joint name to its position value                
                 joint_name_to_position = {joint_name: pos for joint_name, pos in zip(msg.name, msg.position)}
@@ -174,12 +182,14 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
                 write_joint_data(position_file, timestamp, ordered_positions)
                 #write_joint_data(position_file, timestamp, msg.position)
                 print(f"Saved joint positions at timestamp: {timestamp:.9f}")
+                
+            # we don not need velocities and efforts
             #if hasattr(msg, 'velocity') and len(msg.velocity) > 0:
-                write_joint_data(velocity_file, timestamp, msg.velocity)
-                print(f"Saved joint velocities at timestamp: {timestamp:.9f}")
+            #    write_joint_data(velocity_file, timestamp, msg.velocity)
+            #    print(f"Saved joint velocities at timestamp: {timestamp:.9f}")
             #if hasattr(msg, 'effort') and len(msg.effort) > 0:
-                write_joint_data(effort_file, timestamp, msg.effort)
-                print(f"Saved joint efforts at timestamp: {timestamp:.9f}")
+            #    write_joint_data(effort_file, timestamp, msg.effort)
+            #   print(f"Saved joint efforts at timestamp: {timestamp:.9f}")
 
         # Save IMU data
         if connection.topic == topics['imu']:
@@ -247,7 +257,8 @@ def main(rosbag_path, output_dir):
                 
             print("\nReading and extracting data from the ROSBAG...\n")
             rgb_path, depth_path, joint_data_path, imu_data_path = create_output_directories(output_dir, available_topics, topics)
-            rgb_timestamps, depth_timestamps = extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_path, imu_data_path, available_topics, topics)
+            joints_header_written = False
+            rgb_timestamps, depth_timestamps = extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_path, imu_data_path, available_topics, topics,joints_header_written)
                 
             if len(rgb_timestamps) > 0:
                 associations = find_closest_timestamps(rgb_timestamps, depth_timestamps)
