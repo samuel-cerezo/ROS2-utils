@@ -112,7 +112,7 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
         if connection.topic == topics['color_images']:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
             img = image_to_cvimage(msg, 'bgr8')
-            img_name = f'{timestamp}.png'
+            img_name = f'{timestamp:.9f}.png'
             cv2.imwrite(os.path.join(rgb_path, img_name), img)
             rgb_timestamps.append(timestamp)
             print(f"Saved RGB image: {img_name}")
@@ -121,7 +121,7 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
         if connection.topic == topics['depth_images']:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
             img = image_to_cvimage(msg)
-            img_name = f'{timestamp}.png'
+            img_name = f'{timestamp:.9f}.png'
             cv2.imwrite(os.path.join(depth_path, img_name), img)
             depth_timestamps.append(timestamp)
             print(f"Saved Depth image: {img_name}")
@@ -159,14 +159,27 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
         if connection.topic == topics['joint_states']:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
             if hasattr(msg, 'position') and len(msg.position) > 0:
-                write_joint_data(position_file, timestamp, msg.position)
-                print(f"Saved joint positions at timestamp: {timestamp}")
-            if hasattr(msg, 'velocity') and len(msg.velocity) > 0:
+                # Create a dictionary that maps the joint name to its position value                
+                joint_name_to_position = {joint_name: pos for joint_name, pos in zip(msg.name, msg.position)}
+
+                # Order the positions according to the expected joint order (A1 to A6)
+                # The expected order is the one in the 'msg.name' list
+                ordered_positions = [joint_name_to_position['joint1'], 
+                                    joint_name_to_position['joint2'], 
+                                    joint_name_to_position['joint3'], 
+                                    joint_name_to_position['joint4'], 
+                                    joint_name_to_position['joint5'], 
+                                    joint_name_to_position['joint6']]
+                # Write the reordered positions to the file
+                write_joint_data(position_file, timestamp, ordered_positions)
+                #write_joint_data(position_file, timestamp, msg.position)
+                print(f"Saved joint positions at timestamp: {timestamp:.9f}")
+            #if hasattr(msg, 'velocity') and len(msg.velocity) > 0:
                 write_joint_data(velocity_file, timestamp, msg.velocity)
-                print(f"Saved joint velocities at timestamp: {timestamp}")
-            if hasattr(msg, 'effort') and len(msg.effort) > 0:
+                print(f"Saved joint velocities at timestamp: {timestamp:.9f}")
+            #if hasattr(msg, 'effort') and len(msg.effort) > 0:
                 write_joint_data(effort_file, timestamp, msg.effort)
-                print(f"Saved joint efforts at timestamp: {timestamp}")
+                print(f"Saved joint efforts at timestamp: {timestamp:.9f}")
 
         # Save IMU data
         if connection.topic == topics['imu']:
@@ -249,5 +262,5 @@ def main(rosbag_path, output_dir):
 
 if __name__ == "__main__":
     rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion"
-    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_data"
+    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_dataOrdered"
     main(rosbag_path, output_dir)

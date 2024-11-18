@@ -146,8 +146,8 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Define the paths for joint positions and pose data
-    joint_positions_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_planar_motion_data/joint_data/joint_positions.txt'
-    pose_file_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_planar_motion_data/pose_data.txt'
+    joint_positions_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_dataOrdered/joint_data/joint_positions.txt'
+    pose_file_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_dataOrdered/pose_data.txt'
 
     # Initialize the RobotPosePublisher with the file paths
     robot_pose_publisher = RobotPosePublisher(joint_positions_path, pose_file_path)
