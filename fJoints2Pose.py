@@ -182,7 +182,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Define the paths for joint positions and pose data
-    dataset_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_data_Inverted'
+    dataset_path = '/home/samuel/dev/environment_modeling/ROSBAGS/iisy_random_motion_dataOrdered'
     joint_positions_path = dataset_path + '/joint_data/joint_positions.txt'
     pose_file_path = dataset_path + '/pose_data.txt'
 

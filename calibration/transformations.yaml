@@ -1,10 +1,21 @@
 # Typical transformations between the camera's optical, IMU, and infrared frames.
+# All values in mm
 
 # Explanation:
 #             - matrix: A 4x4 transformation matrix representing the pose and transformation from the source frame to the destination frame. 
-# All values in mm
+
 
 T:
+  - source_frame: robot_base
+    destination_frame: world
+    matrix:
+      rows: 4
+      cols: 4
+      dt: d
+      data: [1.0, 0.0, 0.0, 0.0,
+             0.0, 1.0, 0.0, 3.0,
+             0.0, 0.0, 1.0, 4.0,
+               0,0,0,1]
   - source_frame: color_optical
     destination_frame: robot_flange
     matrix:
@@ -15,7 +26,6 @@ T:
             -0.99961,    0.0200144,    0.0194587,      32.9645,
             0.0192076,   -0.0126642,     0.999735,      44.6762,
             0,            0,            0,            1]
-
   # Obtained by the CAD model
   - source_frame: mocap_markers
     destination_frame: robot_flange

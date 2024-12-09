@@ -56,11 +56,11 @@ def extract_transformation_matrices(yaml_file):
 
 
 def main():
-    # yaml_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml'
-    yaml_file = '/Users/samucerezo/dev/src/my-github/KUKA/calibration/transformations.yaml'
+    yaml_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml'
     # Extract transformation matrices and save in a dictionary
     T = extract_transformation_matrices(yaml_file)
-
+    print(T)
+    print(T['robot_base_to_world'])
     # example of usage:
     P_flange = np.array([1, 2, 3, 1])  # point in the robot_flange frame (homogeneous coordinates, 4D)
     T_flange_to_color = np.linalg.inv(T['color_optical_to_robot_flange'])   # Inverse transformation is needed because we are going from robot_flange to color_optical_frame

@@ -2,7 +2,7 @@ import numpy as np
 import math
 import os
 import time
-from include.transformations import euler_to_rotation_matrix  # Asegúrate de tener esta función correctamente definida
+from include.transformations import euler_to_rotation_matrix  
 
 
 def check_pose_files(poses_file_path, hom_poses_file_path):
