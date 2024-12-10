@@ -9,6 +9,8 @@ topic_depth="/camera/camera/depth/image_rect_raw"
 topic_imu_gyro="/camera/camera/gyro/sample"
 topic_imu_aligned="/camera/camera/imu"
 topic_rgbd_syncro="/camera/camera/rgbd"
+topic_joints = "/joint_states"
+
 
 # Paths and files
 ros_ws="$HOME/dev/environment_modeling"
@@ -47,4 +49,5 @@ ros2 bag record -o $bag_file_name \
   $topic_depth \
   $topic_imu_gyro \
   $topic_imu_aligned \
-  $topic_rgbd_syncro     
+  $topic_rgbd_syncro \
+  $topic_joints

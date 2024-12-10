@@ -4,19 +4,19 @@
 # Explanation:
 #             - matrix: A 4x4 transformation matrix representing the pose and transformation from the source frame to the destination frame. 
 
-
 T:
-  - source_frame: robot_base
+  - source_frame: robot_base    #matrix from mocap - updated 10-dic
     destination_frame: world
     matrix:
       rows: 4
       cols: 4
       dt: d
-      data: [1.0, 0.0, 0.0, 0.0,
-             0.0, 1.0, 0.0, 3.0,
-             0.0, 0.0, 1.0, 4.0,
-               0,0,0,1]
-  - source_frame: color_optical
+      data: [1.43130845e-02, 9.99880622e-01, 5.82034962e-03, -1.43087402e+02,
+            -1.93051841e-03, -5.79330101e-03, 9.99981355e-01, 9.12757263e+02,
+            9.99895699e-01, -1.43240540e-02, 1.84736794e-03, -6.19818909e+02,
+            0, 0, 0, 1]
+
+  - source_frame: color_optical   #optical-calib
     destination_frame: robot_flange
     matrix:
       rows: 4
@@ -26,8 +26,8 @@ T:
             -0.99961,    0.0200144,    0.0194587,      32.9645,
             0.0192076,   -0.0126642,     0.999735,      44.6762,
             0,            0,            0,            1]
-  # Obtained by the CAD model
-  - source_frame: mocap_markers
+
+  - source_frame: mocap_markers     # Obtained by the CAD model
     destination_frame: robot_flange
     matrix:
       rows: 4
@@ -36,7 +36,7 @@ T:
       data: [1, 0, 0,   0,
              0, 1, 0,   0,
              0, 0, 1, 18.60,  # 14.1mm + 4.5mm
-             0, 0, 0,   1]    
+             0, 0, 0,   1]
 
   - source_frame: color_optical
     destination_frame: accelerometer

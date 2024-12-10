@@ -60,12 +60,13 @@ def main():
     # Extract transformation matrices and save in a dictionary
     T = extract_transformation_matrices(yaml_file)
     print(T)
-    print(T['robot_base_to_world'])
+    print(f"Robot-base to world:\n {T['robot_base_to_world']}")
+
     # example of usage:
     P_flange = np.array([1, 2, 3, 1])  # point in the robot_flange frame (homogeneous coordinates, 4D)
     T_flange_to_color = np.linalg.inv(T['color_optical_to_robot_flange'])   # Inverse transformation is needed because we are going from robot_flange to color_optical_frame
     P_color = T_flange_to_color @ P_flange      # Transform the point to the color_optical_frame
-    print(f"Point in color_optical_frame: {P_color[:3]}")
+    #print(f"Point in color_optical_frame:\n {P_color[:3]}")
 
 if __name__ == "__main__":
     main()
