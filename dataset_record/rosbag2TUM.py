@@ -272,6 +272,6 @@ def main(rosbag_path, output_dir):
         print(f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/short_dataset"
-    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/short_dataset_data"
+    rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/short_dataset_max"
+    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/short_dataset_max_data"
     main(rosbag_path, output_dir)
