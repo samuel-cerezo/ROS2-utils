@@ -164,8 +164,11 @@ if __name__ == "__main__":
     Main execution block to capture images from a RealSense camera and log robot poses.
     """
     # Set calibration folder path and file names
-    calib_path = input("Enter calibration folder path: ").strip()
-    poses_txt_name = input("Enter base name for pose files: ").strip()
+    calib_source_path = "/home/samuel/dev/environment_modeling/calibration/"
+    calib_folder = input("Enter name for calibration file: ").strip()
+    calib_path = calib_source_path + calib_folder + '/'
+    
+    poses_txt_name = 'robot_poses'
 
     image_folder = create_directories(calib_path)
     poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_6D.txt")
