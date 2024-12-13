@@ -51,4 +51,4 @@ ros2 bag record -o "$bag_file_name" \
   $topic_joints
 
 # usage:
-#       bash ~/dev/environment_modeling/scripts/KUKA/dataset_record/record_data.sh my_custom_bagfile_name
+#       bash ~/dev/environment_modeling/scripts/KUKA/dataset_record/record_data.sh <my_custom_bagfile_name>
