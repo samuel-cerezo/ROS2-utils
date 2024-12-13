@@ -113,7 +113,7 @@ def capture_images(pipeline, file_path, poses_file_path, hom_poses_file_path, ma
 
     try:
         while counter < max_images:
-            user_entry = input('Enter robot pose or type "quit" to finish: ').strip().lower()
+            user_entry = input('Enter robot pose(px,py,pz,angz,angy,angx) or type "quit" to finish: ').strip().lower()
 
             if user_entry == 'quit':
                 break
@@ -164,14 +164,12 @@ if __name__ == "__main__":
     Main execution block to capture images from a RealSense camera and log robot poses.
     """
     # Set calibration folder path and file names
-    calib_path = '/home/samuel/Desktop/d435i_calibration/'
-    poses_txt_name = 'robot_poses'
+    calib_path = input("Enter calibration folder path: ").strip()
+    poses_txt_name = input("Enter base name for pose files: ").strip()
 
-    # Prepare directories and file paths
     image_folder = create_directories(calib_path)
     poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_6D.txt")
     hom_poses_file_path = os.path.join(calib_path, f"{poses_txt_name}.txt")
-     #poses_file_path, hom_poses_file_path = check_pose_files(poses_file_path, hom_poses_file_path)
 
     # Reset and configure the device
     pipeline, config = reset_device()
