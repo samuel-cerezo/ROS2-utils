@@ -71,7 +71,7 @@ output_text += "\n".join(
 # Guardar como archivo de texto
 
 name_output_txt = file_name.split('.')[0]  # Split by '.' and take the first part
-output_file_name = name_output_txt + '_GT' + '.txt'
+output_file_name = 'groundtruth_'+ name_output_txt  + '.txt'
 
 with open(output_file_name, "w") as file:
     file.write(output_text)

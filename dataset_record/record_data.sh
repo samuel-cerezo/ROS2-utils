@@ -11,25 +11,24 @@ topic_imu_aligned="/camera/camera/imu"
 topic_rgbd_syncro="/camera/camera/rgbd"
 topic_joints="/joint_states"
 
-
 # Paths and files
 ros_ws="$HOME/dev/environment_modeling"
-yaml_filename = "config"
-bag_file_path="$HOME/Desktop"
-bag_file_name="dataset_rosbag"
+yaml_filename="config"
+bag_file_path="$HOME/dev/environment_modeling/ROSBAGS"
+
+# Check for bag file name argument
+if [ -z "$1" ]; then
+  echo "Usage: $0 <bag_file_name>"
+  exit 1
+fi
+
+bag_file_name="$1"
 
 # Function to handle errors
 error_exit() {
   echo "$1" 1>&2
   exit 1
 }
-
-# Source the ROS 2 workspace
-#if [ -f "$ros_ws/install/setup.bash" ]; then
-#  source "$ros_ws/install/setup.bash"
-#else
-#  error_exit "Error: ROS 2 workspace setup file not found."
-#fi
 
 # Change to the bag file directory
 if cd "$bag_file_path"; then
@@ -38,10 +37,9 @@ else
   error_exit "Error: Failed to change directory to $bag_file_path."
 fi
 
-
 # Record the topics
 echo "ros2 bag record started..."
-ros2 bag record -o $bag_file_name \
+ros2 bag record -o "$bag_file_name" \
   $topic_imu_accel \
   $topic_aligned_depth \
   $topic_rgb \
@@ -51,3 +49,6 @@ ros2 bag record -o $bag_file_name \
   $topic_imu_aligned \
   $topic_rgbd_syncro \
   $topic_joints
+
+# usage:
+#       bash ~/dev/environment_modeling/scripts/KUKA/dataset_record/record_data.sh my_custom_bagfile_name
