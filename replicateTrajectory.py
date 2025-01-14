@@ -8,23 +8,23 @@ import numpy as np
 import os
 
 class RobotPosePublisher(Node):
-    def __init__(self, joint_positions_path, pose_file_path):
+    def __init__(self, joint_positions_path):
         super().__init__('robot_pose_publisher')
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # Paths for joint positions file and pose output
         self.joint_positions_path = joint_positions_path
-        self.pose_file_path = pose_file_path
+        #self.pose_file_path = pose_file_path
 
         # Check if the pose file already exists. If it does, remove it.
-        if os.path.exists(self.pose_file_path):
-            self.get_logger().info(f"Pose file {self.pose_file_path} exists. Replacing it.")
-            os.remove(self.pose_file_path)
+        #if os.path.exists(self.pose_file_path):
+        #    self.get_logger().info(f"Pose file {self.pose_file_path} exists. Replacing it.")
+        #    os.remove(self.pose_file_path)
 
         # Open files for reading joint data and saving pose data
         self.joint_file = open(self.joint_positions_path, 'r')
-        self.pose_file = open(self.pose_file_path, 'a')
+        #self.pose_file = open(self.pose_file_path, 'a')
 
         # Read the header to get the joint names and order
         self.joint_header = self.read_joint_header()
@@ -83,25 +83,25 @@ class RobotPosePublisher(Node):
                 return
 
             joint_values = joint_line.split()
-            timestamp = float(joint_values[0])  # First value is the timestamp
+            #timestamp = float(joint_values[0])  # First value is the timestamp
             joint_angles = list(map(float, joint_values[1:]))  # The rest are joint angles
 
             # Log joint values and timestamp using joint names from the header
-            joint_log = ", ".join([f"{joint_name}: {angle}" for joint_name, angle in zip(self.joint_header, joint_angles)])
-            self.get_logger().info(f"Publishing joint values at timestamp {timestamp:.9f}: {joint_log}")
+            #joint_log = ", ".join([f"{joint_name}: {angle}" for joint_name, angle in zip(self.joint_header, joint_angles)])
+            #self.get_logger().info(f"Publishing joint values at timestamp {timestamp:.9f}: {joint_log}")
 
             # Reorder joint angles to match the order joint1, joint2, ..., joint6
-            ordered_joint_angles = self.reorder_joint_angles(joint_angles)
+            #ordered_joint_angles = self.reorder_joint_angles(joint_angles)
 
             # Publish the joint values to control the robot's motion
-            self.publish_joint_commands(ordered_joint_angles)
+            self.publish_joint_commands(joint_angles)
 
             # Wait for the robot to reach the position (Adjust the sleep time as needed)
             #time.sleep(0.1)  # Time to wait for the robot to reach the desired joint position
 
             # Get the transformation matrix for this timestamp using tool0 and base_link
-            self.get_logger().info(f"Retrieving pose at timestamp {timestamp:.9f}")
-            self.query_pose(timestamp)
+            #self.get_logger().info(f"Retrieving pose at timestamp {timestamp:.9f}")
+            #self.query_pose(timestamp)
 
             # Increment joint index to move to the next set of joint values
             self.joint_index += 1
@@ -115,7 +115,6 @@ class RobotPosePublisher(Node):
         # Create a mapping of the correct joint order
         #joint_order = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
         joint_order = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6']
-
 
         # Create a dictionary with joint names as keys and their respective angles as values
         joint_dict = dict(zip(self.joint_header, joint_angles))
@@ -135,7 +134,7 @@ class RobotPosePublisher(Node):
 
         # Publish the joint command
         self.command_publisher.publish(msg)
-        self.get_logger().info(f"Published joint command: {msg.data}")
+        #self.get_logger().info(f"Published joint command: {msg.data}")
 
     def query_pose(self, timestamp):
         try:
@@ -200,10 +199,9 @@ def main(args=None):
     # Define the paths for joint positions and pose data
     dataset_path = '/home/samuel/dev/environment_modeling/ROSBAGS/old/iisy_random_motion_data'
     joint_positions_path = dataset_path + '/joint_data/joint_positions.txt'         #source file
-    pose_file_path = dataset_path + '/pose_data2.txt'                                #destination file
 
-    # Initialize the RobotPosePublisher with the file paths
-    robot_pose_publisher = RobotPosePublisher(joint_positions_path, pose_file_path)
+    # Initialize the RobotPosePublisher
+    robot_pose_publisher = RobotPosePublisher(joint_positions_path)
 
     rclpy.spin(robot_pose_publisher)
     robot_pose_publisher.destroy_node()
