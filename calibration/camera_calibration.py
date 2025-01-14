@@ -107,9 +107,9 @@ def capture_images(pipeline, file_path, poses_file_path, hom_poses_file_path, ma
 
     # Add headers to the pose files
     with open(poses_file_path, "a") as pose_file:
-        pose_file.write('# posx, posy, posz, angle1, angle2, angle3\n')
+        pose_file.write('#posx, posy, posz, angle1, angle2, angle3\n')
     with open(hom_poses_file_path, "a") as pose_file:
-        pose_file.write('# R11, R12, R13, posX, R21, R22, R23, posY, R31, R32, R33, posZ, 0,0,0,1\n')
+        pose_file.write('#R11, R12, R13, posX, R21, R22, R23, posY, R31, R32, R33, posZ, 0,0,0,1\n')
 
     try:
         while counter < max_images:
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     poses_txt_name = 'robot_poses'
 
     image_folder = create_directories(calib_path)
-    poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_6D.txt")
+    poses_file_path = os.path.join(calib_path, f"{poses_txt_name}_smartpad.txt")
     hom_poses_file_path = os.path.join(calib_path, f"{poses_txt_name}.txt")
 
     # Reset and configure the device
