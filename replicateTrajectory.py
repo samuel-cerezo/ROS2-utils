@@ -6,6 +6,7 @@ from std_msgs.msg import Float64MultiArray
 import time
 import numpy as np
 import os
+import argparse
 
 class RobotPosePublisher(Node):
     def __init__(self, joint_positions_path):
@@ -15,16 +16,9 @@ class RobotPosePublisher(Node):
 
         # Paths for joint positions file and pose output
         self.joint_positions_path = joint_positions_path
-        #self.pose_file_path = pose_file_path
-
-        # Check if the pose file already exists. If it does, remove it.
-        #if os.path.exists(self.pose_file_path):
-        #    self.get_logger().info(f"Pose file {self.pose_file_path} exists. Replacing it.")
-        #    os.remove(self.pose_file_path)
 
         # Open files for reading joint data and saving pose data
         self.joint_file = open(self.joint_positions_path, 'r')
-        #self.pose_file = open(self.pose_file_path, 'a')
 
         # Read the header to get the joint names and order
         self.joint_header = self.read_joint_header()
@@ -43,9 +37,6 @@ class RobotPosePublisher(Node):
         self.joint_data_lines = self.joint_file.readlines()
         self.joint_index = 0
 
-        # initialize the timestamp for the last command
-        self.last_command_time = None
-
         # Timer to run periodically
         self.timer = self.create_timer(0.004, self.publish_pose_from_joint_data)
 
@@ -57,24 +48,18 @@ class RobotPosePublisher(Node):
         header_values = header_line.split()
         if header_values[0] == "#timestamp":
             joint_names = header_values[1:]  # Everything after '#timestamp' is the joint names
-            #self.get_logger().info(f"Detected joint header: {joint_names}")
             return joint_names
         else:
             raise ValueError("Invalid header format. The header should start with '#timestamp'.")
 
+    def stop_execution(self):
+        """Detiene el nodo de manera explícita."""
+        self.get_logger().info("Deteniendo ejecución del nodo...")
+        self.timer.cancel()  # Cancelar el temporizador si sigue activo
+        self.destroy_node()  # Destruir el nodo
+        rclpy.shutdown()  # Finalizar rclpy
+    
     def publish_pose_from_joint_data(self):
-        
-        # Get the current time
-        #current_time = self.get_clock().now()
-        # Calculate and log the time difference since the last command
-        #if self.last_command_time is not None:
-        #    time_diff = (current_time - self.last_command_time).nanoseconds / 1e6  # Convert nanoseconds to milliseconds
-            #self.get_logger().info(f"Time since last command: {time_diff:.3f} ms")
-        # Update the last command time
-
-        #self.last_command_time = current_time
-        
-        
         if self.joint_index < len(self.joint_data_lines):
             joint_line = self.joint_data_lines[self.joint_index].strip()
             
@@ -84,37 +69,20 @@ class RobotPosePublisher(Node):
                 return
 
             joint_values = joint_line.split()
-            #timestamp = float(joint_values[0])  # First value is the timestamp
             joint_angles = list(map(float, joint_values[1:]))  # The rest are joint angles
-
-            # Log joint values and timestamp using joint names from the header
-            #joint_log = ", ".join([f"{joint_name}: {angle}" for joint_name, angle in zip(self.joint_header, joint_angles)])
-            #self.get_logger().info(f"Publishing joint values at timestamp {timestamp:.9f}: {joint_log}")
-
-            # Reorder joint angles to match the order joint1, joint2, ..., joint6
-            #ordered_joint_angles = self.reorder_joint_angles(joint_angles)
 
             # Publish the joint values to control the robot's motion
             self.publish_joint_commands(joint_angles)
-
-            # Wait for the robot to reach the position (Adjust the sleep time as needed)
-            #time.sleep(0.1)  # Time to wait for the robot to reach the desired joint position
-
-            # Get the transformation matrix for this timestamp using tool0 and base_link
-            #self.get_logger().info(f"Retrieving pose at timestamp {timestamp:.9f}")
-            #self.query_pose(timestamp)
 
             # Increment joint index to move to the next set of joint values
             self.joint_index += 1
         else:
             # Once all joint data has been processed, shutdown the node
             self.get_logger().info("All joint data processed. Shutting down.")
-            rclpy.shutdown()
+            self.stop_execution()
 
     def reorder_joint_angles(self, joint_angles):
         """Reorders the joint angles to match the order joint1, joint2, ..., joint6."""
-        # Create a mapping of the correct joint order
-        #joint_order = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
         joint_order = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6']
 
         # Create a dictionary with joint names as keys and their respective angles as values
@@ -135,77 +103,36 @@ class RobotPosePublisher(Node):
 
         # Publish the joint command
         self.command_publisher.publish(msg)
-        #self.get_logger().info(f"Published joint command: {msg.data}")
-
-    def query_pose(self, timestamp):
-        try:
-            # Get the current transform between base_link and tool0
-            trans = self.tf_buffer.lookup_transform('base_link', 'tool0', rclpy.time.Time())
-
-            # Extract rotation (quaternion) and translation (vector)
-            rotation = trans.transform.rotation
-            translation = trans.transform.translation
-
-            # Convert quaternion to a rotation matrix manually
-            rotation_matrix = self.quaternion_to_matrix(rotation)
-
-            # Format the pose data as translation + quaternion
-            pose_data = f"{timestamp:.9f} "
-            pose_data += f"{translation.x} {translation.y} {translation.z} "  # Translation vector (t)
-            pose_data += f"{rotation.x} {rotation.y} {rotation.z} {rotation.w}\n"  # Quaternion
-
-            # Write the header only once at the beginning
-            if not self.header_written:
-                self.pose_file.write("# timestamp translation_x translation_y translation_z quaternion_x quaternion_y quaternion_z quaternion_w\n")
-                self.header_written = True
-
-            # Write the pose data to the file
-            self.pose_file.write(pose_data)
-            self.pose_file.flush()  # Ensure the data is written immediately
-
-            # Log the pose (Translation + Quaternion)
-            self.get_logger().info(f"Pose of tool0 w.r.t base_link:")
-            self.get_logger().info(f"Translation: ({translation.x}, {translation.y}, {translation.z})")
-            self.get_logger().info(f"Quaternion: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})")
-
-            # Log the rotation matrix
-            self.get_logger().info(f"Rotation Matrix (3x3): \n{rotation_matrix}")
-
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-            self.get_logger().error(f"Error getting transform: {e}")
-
-    def quaternion_to_matrix(self, quat):
-        """Convert a quaternion to a 3x3 rotation matrix."""
-        x, y, z, w = quat.x, quat.y, quat.z, quat.w
-
-        # Calculate the rotation matrix from the quaternion
-        R = np.array([
-            [1 - 2 * (y**2 + z**2), 2 * (x * y - z * w), 2 * (x * z + y * w)],
-            [2 * (x * y + z * w), 1 - 2 * (x**2 + z**2), 2 * (y * z - x * w)],
-            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x**2 + y**2)]
-        ])
-
-        return R
 
     def __del__(self):
         # Close the files when the node is destroyed
         self.joint_file.close()
 
 
-# -----------------------------------------------------------------------------------------------------
 def main(args=None):
     rclpy.init(args=args)
 
+    # Parse the command line arguments
+    parser = argparse.ArgumentParser(description="Robot Pose Publisher")
+    parser.add_argument('dataset_name', type=str, help="The name of the dataset folder")
+    args = parser.parse_args()
+
     # Define the paths for joint positions and pose data
-    dataset_path = '/home/samuel/dev/environment_modeling/ROSBAGS/trayectoria2_data'
-    joint_positions_path = dataset_path + '/joint_data/joint_positions.txt'         #source file
+    rosbag_folder = '/home/samuel/dev/environment_modeling/ROSBAGS/'
+    dataset_path = os.path.join(rosbag_folder, args.dataset_name)
+    joint_positions_path = os.path.join(dataset_path, 'joint_data', 'joint_positions.txt')
 
     # Initialize the RobotPosePublisher
     robot_pose_publisher = RobotPosePublisher(joint_positions_path)
-
-    rclpy.spin(robot_pose_publisher)
-    robot_pose_publisher.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(robot_pose_publisher)  # Ejecutar el nodo
+    except KeyboardInterrupt:
+        robot_pose_publisher.get_logger().info("Interrupción manual. Cerrando nodo.")
+    finally:
+        # Asegurarnos de que se cierre correctamente
+        print("Cerrando nodo...")
+        robot_pose_publisher.stop_execution()  # Llamamos directamente a la detención
+        print("Nodo cerrado correctamente.")
 
 if __name__ == '__main__':
     main()
