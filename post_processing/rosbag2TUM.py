@@ -162,7 +162,10 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
         if connection.topic == topics['joint_states']:
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
             if (joints_header_written == False):
-                joint_header = msg.name
+                #joint_header = msg.name
+                joint_header = ['joint_1', 'joint_2', 'joint_3', 'joint_4', 'joint_5', 'joint_6']
+                #joint_header = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6']
+
                 position_file, velocity_file, effort_file = create_joint_data_files(joint_data_path,joint_header)
                 joints_header_written = True
 
@@ -172,12 +175,12 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
 
                 # Order the positions according to the expected joint order (A1 to A6)
                 # The expected order is the one in the 'msg.name' list
-                ordered_positions = [joint_name_to_position['joint1'], 
-                                    joint_name_to_position['joint2'], 
-                                    joint_name_to_position['joint3'], 
-                                    joint_name_to_position['joint4'], 
-                                    joint_name_to_position['joint5'], 
-                                    joint_name_to_position['joint6']]
+                ordered_positions = [joint_name_to_position['joint_1'], 
+                                    joint_name_to_position['joint_2'], 
+                                    joint_name_to_position['joint_3'], 
+                                    joint_name_to_position['joint_4'], 
+                                    joint_name_to_position['joint_5'], 
+                                    joint_name_to_position['joint_6']]
                 # Write the reordered positions to the file
                 write_joint_data(position_file, timestamp, ordered_positions)
                 #write_joint_data(position_file, timestamp, msg.position)
@@ -272,6 +275,6 @@ def main(rosbag_path, output_dir):
         print(f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/short_dataset_max"
-    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/short_dataset_max_data"
+    rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/trayectoria2"
+    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/trayectoria2_data"
     main(rosbag_path, output_dir)

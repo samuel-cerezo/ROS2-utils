@@ -57,22 +57,23 @@ class RobotPosePublisher(Node):
         header_values = header_line.split()
         if header_values[0] == "#timestamp":
             joint_names = header_values[1:]  # Everything after '#timestamp' is the joint names
-            self.get_logger().info(f"Detected joint header: {joint_names}")
+            #self.get_logger().info(f"Detected joint header: {joint_names}")
             return joint_names
         else:
             raise ValueError("Invalid header format. The header should start with '#timestamp'.")
 
     def publish_pose_from_joint_data(self):
+        
         # Get the current time
-        current_time = self.get_clock().now()
-
+        #current_time = self.get_clock().now()
         # Calculate and log the time difference since the last command
-        if self.last_command_time is not None:
-            time_diff = (current_time - self.last_command_time).nanoseconds / 1e6  # Convert nanoseconds to milliseconds
-            self.get_logger().info(f"Time since last command: {time_diff:.3f} ms")
-
+        #if self.last_command_time is not None:
+        #    time_diff = (current_time - self.last_command_time).nanoseconds / 1e6  # Convert nanoseconds to milliseconds
+            #self.get_logger().info(f"Time since last command: {time_diff:.3f} ms")
         # Update the last command time
-        self.last_command_time = current_time
+
+        #self.last_command_time = current_time
+        
         
         if self.joint_index < len(self.joint_data_lines):
             joint_line = self.joint_data_lines[self.joint_index].strip()
@@ -189,7 +190,6 @@ class RobotPosePublisher(Node):
     def __del__(self):
         # Close the files when the node is destroyed
         self.joint_file.close()
-        self.pose_file.close()
 
 
 # -----------------------------------------------------------------------------------------------------
@@ -197,7 +197,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Define the paths for joint positions and pose data
-    dataset_path = '/home/samuel/dev/environment_modeling/ROSBAGS/old/iisy_random_motion_data'
+    dataset_path = '/home/samuel/dev/environment_modeling/ROSBAGS/trayectoria2_data'
     joint_positions_path = dataset_path + '/joint_data/joint_positions.txt'         #source file
 
     # Initialize the RobotPosePublisher
