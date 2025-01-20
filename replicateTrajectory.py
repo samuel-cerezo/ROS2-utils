@@ -8,6 +8,7 @@ import numpy as np
 import os
 import argparse
 
+
 class RobotPosePublisher(Node):
     def __init__(self, joint_positions_path):
         super().__init__('robot_pose_publisher')
@@ -32,6 +33,8 @@ class RobotPosePublisher(Node):
             '/joint_trajectory_controller/commands',
             10
         )
+
+        self.count = 0
 
         # Read all joint data lines at the start
         self.joint_data_lines = self.joint_file.readlines()
@@ -70,12 +73,18 @@ class RobotPosePublisher(Node):
 
             joint_values = joint_line.split()
             joint_angles = list(map(float, joint_values[1:]))  # The rest are joint angles
-
             # Publish the joint values to control the robot's motion
             self.publish_joint_commands(joint_angles)
 
-            # Increment joint index to move to the next set of joint values
-            self.joint_index += 1
+            if self.count<3000:
+                # Increment joint index to move to the next set of joint values
+                self.joint_index = 1
+                #print(self.count)
+                self.count +=1
+            else:
+                self.joint_index += 1
+
+
         else:
             # Once all joint data has been processed, shutdown the node
             self.get_logger().info("All joint data processed. Shutting down.")
@@ -103,6 +112,7 @@ class RobotPosePublisher(Node):
 
         # Publish the joint command
         self.command_publisher.publish(msg)
+        #print(msg.data)
 
     def __del__(self):
         # Close the files when the node is destroyed

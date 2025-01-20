@@ -11,55 +11,68 @@ fi
 # Window 1: Run the Docker command with ROS2
 gnome-terminal -- bash -c "
 echo 'Starting ROS2 Launch in Docker...';
-docker run --network host -v \$HOME/dev/environment_modeling/scripts/KUKA/create_trajectory/iiqka_driver_torque_config.yaml:/root/iiqka_driver_torque_config.yaml --rm docker.pkg.rd.kuka.com/kuka/cr/ros2robot:0.1.4-humble ros2 launch kuka_tic startup_iiqka.launch.py --robot_model:=lbr_iisy3_r760 client_ip:=192.168.1.90 controller_ip:=192.168.1.100 driver_config:=/root/iiqka_driver_torque_config.yaml
+docker run --network host -v /home/samuel/dev/environment_modeling/scripts/KUKA/create_trajectory/iiqka_driver_torque_config.yaml:/root/iiqka_driver_torque_config.yaml  --rm docker.pkg.rd.kuka.com/kuka/cr/ros2robot:0.1.4-humble ros2 launch kuka_tic startup_iiqka.launch.py -- robot_model:=lbr_iisy3_r760 client_ip:=192.168.1.90 controller_ip:=192.168.1.100 driver_config:=/root/iiqka_driver_torque_config.yaml;
 exec bash
 "
 
 sleep 5
 
-# Window 2: Configure and activate the robot_manager
+# Window 2: Execute the ros2 bag record script
 gnome-terminal -- bash -c "
-echo 'Configuring robot_manager...';
-ros2 lifecycle set robot_manager configure;
-if [ \$? -eq 0 ]; then
-  echo 'Activating robot_manager...';
-  ros2 lifecycle set robot_manager activate;
-fi;
-exit
-"
 
-# Window 3: Echo the /joint_states topic
-gnome-terminal -- bash -c "
-echo 'Displaying /joint_states topic...';
-ros2 topic echo /joint_states;
-echo 'Press CTRL+C to stop this echo';
-exec bash
-"
+# Topic names
+topic_imu_accel='/camera/camera/accel/sample'
+topic_aligned_depth='/camera/camera/aligned_depth_to_color/image_raw'
+topic_rgb='/camera/camera/color/image_raw'
+topic_point_cloud='/camera/camera/depth/color/points'
+topic_depth='/camera/camera/depth/image_rect_raw'
+topic_imu_gyro='/camera/camera/gyro/sample'
+topic_imu_aligned='/camera/camera/imu'
+topic_rgbd_syncro='/camera/camera/rgbd'
+topic_joints='/joint_states'
 
-# Window 4: Wait for the robot_manager to activate and record the ROSBag
-gnome-terminal -- bash -c "
-echo 'Waiting for robot_manager to activate...';
-while ! ros2 lifecycle get robot_manager | grep -q 'active'; do
-  sleep 1;
-done;
-echo 'Waiting for confirmation to start recording...';
-read -p 'Press ENTER to start recording the ROSBag...';
+# Paths and files
+ros_ws='/home/samuel/dev/environment_modeling'
+yaml_filename='config'
+bag_file_path='/home/samuel/dev/environment_modeling/ROSBAGS'
 
-topic_joints='/joint_states';
-ros_ws='\$HOME/dev/environment_modeling';
-bag_file_path='\$HOME/dev/environment_modeling/ROSBAGS';
-bag_file_name='\$BAG_NAME';
+# Retrieve BAG_NAME from parent script
+bag_file_name=\"$BAG_NAME\"
 
-# Change to the ROSBAG directory
-if cd \"\$bag_file_path\"; then
-  echo 'Changing to ROSBAG directory: \$bag_file_path';
-else
-  echo 'Error: Could not change to the ROSBAG directory.' 1>&2;
+# Function to handle errors
+error_exit() {
+  echo \"\$1\" 1>&2;
+  read -n 1 -p 'Press any key to exit...';
   exit 1;
+}
+
+# Change to the bag file directory
+echo 'Changing to ROSBAG directory: \$bag_file_path';
+if cd \"\$bag_file_path\"; then
+  echo 'Changed directory to \$bag_file_path';
+else
+  error_exit 'Error: Failed to change directory to \$bag_file_path.';
 fi
 
-# Record the topic in the ROSBag file
-echo 'Starting the ROSBag recording...';
-ros2 bag record -o \"\$bag_file_name\" \$topic_joints;
-exit
+# Record the topics
+echo 'Starting ROSBag recording...';
+ros2 bag record -o \"\$bag_file_name\" \\
+  \$topic_imu_accel \\
+  \$topic_aligned_depth \\
+  \$topic_rgb \\
+  \$topic_point_cloud \\
+  \$topic_depth \\
+  \$topic_imu_gyro \\
+  \$topic_imu_aligned \\
+  \$topic_rgbd_syncro \\
+  \$topic_joints;
+if [ \$? -eq 0 ]; then
+  echo 'ROSBag recording started successfully.';
+else
+  error_exit 'Error: Failed to start ROSBag recording.';
+fi;
+
+# Prevent terminal from closing automatically
+echo 'Recording ROSBag. Press any key to exit...';
+read -n 1
 "

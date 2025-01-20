@@ -4,7 +4,7 @@
 if [ "$1" == "virtual" ]; then
   VENTANA1_CMD="ros2 launch kuka_iiqka_eac_driver startup_with_rviz.launch.py"
 elif [ "$1" == "real" ]; then
-  VENTANA1_CMD="ros2 launch kuka_iiqka_eac_driver startup.launch.py --robot_model:=lbr_iisy3_r760 client_ip:=192.168.1.90 controller_ip:=192.168.1.100 driver_config:=\$HOME/ros2_humble/src/kuka_drivers/kuka_iiqka_eac_driver/config/joint_trajectory_controller_config.yaml use_fake_hardware:=false"
+  VENTANA1_CMD="ros2 launch kuka_iiqka_eac_driver startup.launch.py -- robot_model:=lbr_iisy3_r760 client_ip:=192.168.1.90 controller_ip:=192.168.1.100 driver_config:=\$HOME/ros2_humble/src/kuka_drivers/kuka_iiqka_eac_driver/config/joint_trajectory_controller_config.yaml use_fake_hardware:=false"
 else
   echo "Invalid argument. Use 'virtual' or 'real'."
   exit 1
@@ -45,5 +45,4 @@ while ! ros2 lifecycle get robot_manager | grep -q 'active'; do
 done;
 echo 'Running script...';
 /bin/python3.10 /home/samuel/dev/environment_modeling/scripts/KUKA/replicateTrajectory.py $TRAJ_DATA;
-exit
 "
