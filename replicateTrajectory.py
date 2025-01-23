@@ -84,7 +84,6 @@ class RobotPosePublisher(Node):
             else:
                 self.joint_index += 1
 
-
         else:
             # Once all joint data has been processed, shutdown the node
             self.get_logger().info("All joint data processed. Shutting down.")
@@ -112,7 +111,7 @@ class RobotPosePublisher(Node):
 
         # Publish the joint command
         self.command_publisher.publish(msg)
-        #print(msg.data)
+        print(msg.data)
 
     def __del__(self):
         # Close the files when the node is destroyed
@@ -128,7 +127,9 @@ def main(args=None):
     args = parser.parse_args()
 
     # Define the paths for joint positions and pose data
-    rosbag_folder = '/home/samuel/dev/environment_modeling/ROSBAGS/'
+    #rosbag_folder = '/home/samuel/dev/environment_modeling/ROSBAGS/'
+    rosbag_folder = os.path.expandvars("$HOME/dev/environment_modeling/ROSBAGS/")
+
     dataset_path = os.path.join(rosbag_folder, args.dataset_name)
     joint_positions_path = os.path.join(dataset_path, 'joint_data', 'joint_positions.txt')
 

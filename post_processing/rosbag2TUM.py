@@ -251,6 +251,9 @@ def main(rosbag_path, output_dir):
     # path_to_RGBDmsg = '/home/samuel/dev/ros2_ws/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg'
     path_to_RGBDmsg = '/home/samuel/dev/ros2_ws/src/realsense-ros/realsense2_camera_msgs/msg/RGBD.msg'
     path_to_RGBDmsg = '/home/samuel/ros2_realsenseWS/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg'
+    #path_to_RGBDmsg = os.path.expandvars("$HOME/ros2_ws/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg")
+
+    
     typestore = load_custom_types(path_to_RGBDmsg)  # Load RGBD message types
 
     try:
@@ -274,7 +277,14 @@ def main(rosbag_path, output_dir):
     except Exception as e:
         print(f"An unexpected error occurred: {str(e)}")
 
+'''
 if __name__ == "__main__":
     rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/planar"
     output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/planar_data"
+    main(rosbag_path, output_dir)
+'''
+
+if __name__ == "__main__":
+    rosbag_path = os.path.expandvars("$HOME/dev/environment_modeling/ROSBAGS/planar")
+    output_dir = os.path.expandvars("$HOME/dev/environment_modeling/ROSBAGS/planar_data")
     main(rosbag_path, output_dir)

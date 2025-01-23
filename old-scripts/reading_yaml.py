@@ -31,6 +31,8 @@ def main():
     # Path to the cleaned YAML file
    # yaml_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml'
     yaml_file = '/Users/samucerezo/dev/src/my-github/KUKA/calibration/transformations.yaml'
+    yaml_file = os.path.expandvars("$HOME/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml")
+
     current_directory = os.getcwd()
 
     # Read the YAML file

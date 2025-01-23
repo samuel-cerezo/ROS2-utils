@@ -36,7 +36,9 @@ def read_poses_file(poses_file_path):
 
 if __name__ == "__main__":
     # Path to the file containing the homogeneous matrices
-    calib_path = '/home/samuel/Desktop/base_robot_calibration/'
+    #calib_path = '/home/samuel/Desktop/base_robot_calibration/'
+    calib_path = os.path.expandvars("$HOME/Desktop/base_robot_calibration/")
+
     hom_poses_file_path = os.path.join(calib_path, 'robot_poses.txt')
 
     # Read the file and get the list of T_world_flange matrices
