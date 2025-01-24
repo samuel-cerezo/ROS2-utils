@@ -56,8 +56,8 @@ def extract_transformation_matrices(yaml_file):
 
 
 def main():
-    #yaml_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml'
-    yaml_file = os.path.expandvars("$HOME/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml")
+    yaml_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml'
+    #yaml_file = os.path.expandvars("$HOME/dev/environment_modeling/scripts/KUKA/calibration/transformations.yaml")
 
     # Extract transformation matrices and save in a dictionary
     T = extract_transformation_matrices(yaml_file)

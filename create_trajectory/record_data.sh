@@ -12,9 +12,9 @@
 topic_joints="/joint_states"
 
 # Paths and files
-ros_ws="$HOME/dev/environment_modeling"
+ros_ws="/home/samuel/dev/environment_modeling"
 yaml_filename="config"
-bag_file_path="$HOME/dev/environment_modeling/ROSBAGS"
+bag_file_path="/home/samuel/dev/environment_modeling/ROSBAGS"
 
 # Check for bag file name argument
 if [ -z "$1" ]; then
@@ -42,4 +42,4 @@ echo "ros2 bag record started..."
 ros2 bag record -o "$bag_file_name" $topic_joints
 
 # usage:
-#       bash ~/dev/environment_modeling/scripts/KUKA/create_trajectory/record_data.sh <my_bagfile_name>
+#       bash /home/samuel/dev/environment_modeling/scripts/KUKA/create_trajectory/record_data.sh <my_bagfile_name>

@@ -65,8 +65,8 @@ def main():
     """
     # Base file path and folder names
     rosfile_name = 'd435_test1'
-    #file_path = "/home/samuel/Desktop/"
-    file_path = os.path.expandvars("$HOME//Desktop/")
+    file_path = "/home/samuel/Desktop/"
+    #file_path = os.path.expandvars("$HOME/Desktop/")
 
     # Generate paths for RGB and Depth images
     rgb_path, depth_path = create_paths(file_path, rosfile_name)
