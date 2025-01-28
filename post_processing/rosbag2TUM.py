@@ -1,3 +1,4 @@
+import argparse
 import cv2
 import os
 from rosbags.rosbag2 import Reader
@@ -237,54 +238,74 @@ def list_topics(reader):
     return available_topics
 
 # Main function
-def main(rosbag_path, output_dir):
 
+def main():
+    parser = argparse.ArgumentParser(description="Extract data from a ROSBAG file.")
+    parser.add_argument(
+        "--input",
+        type=str,
+        required=True,
+        help="Nombre del archivo de entrada (sin la carpeta base '/ROSBAGS')."
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        required=True,
+        help="Nombre de la carpeta de salida donde se guardará el contenido procesado."
+    )
+    args = parser.parse_args()
+
+    # Base path para los ROSBAGs
+    rosbag_base_path = "/home/samuel/dev/environment_modeling/ROSBAGS"
+    output_base_path = "/home/samuel/dev/environment_modeling/ROSBAGS"
+
+    # Combinamos el base path con los argumentos
+    rosbag_path = os.path.join(rosbag_base_path, args.input)
+    output_dir = os.path.join(output_base_path, args.output)
+
+    if not os.path.exists(rosbag_path):
+        raise FileNotFoundError(f"El archivo de entrada '{rosbag_path}' no existe.")
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    print(f"Procesando el archivo de entrada: {rosbag_path}")
+    print(f"Guardando datos procesados en: {output_dir}")
+
+    # Aquí puedes incluir el resto del flujo del script, como cargar los mensajes, procesar las imágenes, etc.
     topics = {
-        'color_images': ' ',        #need to be complete, for example... 'color_images': '/camera/camera/color/image_raw',
-        'rgbd':'/camera/camera/rgbd',   # delete if it is not needed
-        'depth_images': ' ',        # need to be complete, for example... '/camera/camera/aligned_depth_to_color/image_raw'
-        'joint_states': '/joint_states', 
-        'imu': '/camera/camera/imu'  # IMU topic corrected to the proper path
+        'color_images': ' ',  # Completar según el tema del ROSBAG
+        'rgbd': '/camera/camera/rgbd',
+        'depth_images': ' ',  # Completar según el tema del ROSBAG
+        'joint_states': '/joint_states',
+        'imu': '/camera/camera/imu'
     }
 
-    # this is for RGBD topic
-    # path_to_RGBDmsg = '/home/samuel/dev/ros2_ws/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg'
-    path_to_RGBDmsg = '/home/samuel/dev/ros2_ws/src/realsense-ros/realsense2_camera_msgs/msg/RGBD.msg'
-    path_to_RGBDmsg = '/home/samuel/ros2_realsenseWS/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg'
-    #path_to_RGBDmsg = os.path.expandvars("$HOME/ros2_ws/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg")
-
-    
-    typestore = load_custom_types(path_to_RGBDmsg)  # Load RGBD message types
+    path_to_RGBDmsg = os.path.expandvars("/home/ros2_ws/install/realsense2_camera_msgs/share/realsense2_camera_msgs/msg/RGBD.msg")
+    typestore = load_custom_types(path_to_RGBDmsg)
 
     try:
         with Reader(rosbag_path) as reader:
             available_topics = list_topics(reader)
             print(available_topics)
-                
-            print("\nReading and extracting data from the ROSBAG...\n")
+            
+            print("\nLeyendo y extrayendo datos del ROSBAG...\n")
             rgb_path, depth_path, joint_data_path, imu_data_path = create_output_directories(output_dir, available_topics, topics)
             joints_header_written = False
-            rgb_timestamps, depth_timestamps = extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_path, imu_data_path, available_topics, topics,joints_header_written)
-                
-            if len(rgb_timestamps) > 0:
-                associations = find_closest_timestamps(rgb_timestamps, depth_timestamps)
-                create_associations_file(output_dir, associations)
 
-            print(f"\nProcessing completed. Total RGB images: {len(rgb_timestamps)}. Total depth images: {len(depth_timestamps)}")
+            rgb_timestamps, depth_timestamps = extract_and_save_data(
+                reader, typestore, rgb_path, depth_path, joint_data_path, imu_data_path,
+                available_topics, topics, joints_header_written
+            )
 
-    except FileNotFoundError:
-        print(f"Error: The ROSBAG file at {rosbag_path} was not found.")
+            associations = find_closest_timestamps(rgb_timestamps, depth_timestamps)
+            create_associations_file(output_dir, associations)
+    
     except Exception as e:
-        print(f"An unexpected error occurred: {str(e)}")
-
-'''
-if __name__ == "__main__":
-    rosbag_path = "/home/samuel/dev/environment_modeling/ROSBAGS/planar"
-    output_dir = "/home/samuel/dev/environment_modeling/ROSBAGS/planar_data"
-    main(rosbag_path, output_dir)
-'''
+        print(f"Error procesando el ROSBAG: {e}")
 
 if __name__ == "__main__":
-    rosbag_path = os.path.expandvars("$HOME/dev/environment_modeling/ROSBAGS/planar")
-    output_dir = os.path.expandvars("$HOME/dev/environment_modeling/ROSBAGS/planar_data")
-    main(rosbag_path, output_dir)
+    main()
+    
+# Ejemplo de uso
+# python3 rosbag2TUM.py --input planar --output planar_data

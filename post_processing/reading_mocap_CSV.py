@@ -1,81 +1,122 @@
 import pandas as pd
-from datetime import datetime
 import csv
+import argparse
+from datetime import datetime
+import os
 
-# Cargar el archivo 
-file_name = 'short_dataset.csv'
+# Función para cargar y extraer los datos del archivo CSV
+def extract_metadata(file_name):
+    frame_rate = None
+    capture_start_time = None
+    total_exported_frames = None
 
-# --- We extract header information ----
-frame_rate = None
-capture_start_time = None
-total_exported_frames = None
+    try:
+        with open(file_name, 'r') as file:
+            csv_reader = csv.reader(file)
+            for row in csv_reader:
+                # Extraer información de la primera fila
+                if row[0] == "Format Version":
+                    # Parsear valores necesarios
+                    frame_rate = row[row.index("Capture Frame Rate") + 1]
+                    capture_start_time = row[row.index("Capture Start Time") + 1]
+                    total_exported_frames = row[row.index("Total Exported Frames") + 1]
+                    break
+        # Convertir la hora de inicio de captura a objeto datetime
+        time_obj = datetime.strptime(capture_start_time, "%Y-%m-%d %I.%M.%S.%f %p")
+        # Convertir a timestamp Unix
+        zero_unix_time_sec = int(time_obj.timestamp())
+        return frame_rate, capture_start_time, total_exported_frames, zero_unix_time_sec
+    except Exception as e:
+        print(f"Error al leer el archivo CSV: {e}")
+        return None
 
-# Open and read the CSV file
-with open(file_name, 'r') as file:
-    csv_reader = csv.reader(file)
-    for row in csv_reader:
-        # Extract data from the first row
-        if row[0] == "Format Version":
-            # Parse required values
-            frame_rate = row[row.index("Capture Frame Rate") + 1]
-            capture_start_time = row[row.index("Capture Start Time") + 1]
-            total_exported_frames = row[row.index("Total Exported Frames") + 1]
-            break
+# Función para limpiar y procesar los datos
+def process_data(file_name, zero_unix_time_sec):
+    try:
+        # Cargar el archivo CSV en un DataFrame
+        df = pd.read_csv(file_name, skiprows=6)
 
-# Convert to a datetime object
-time_obj = datetime.strptime(f"{capture_start_time}", "%Y-%m-%d %I.%M.%S.%f %p")
+        # Filtrar las columnas necesarias
+        filtered_data = df[['Time (Seconds)', 'qX', 'qY', 'qZ', 'qW', 'X', 'Y', 'Z']].copy()
 
-# Convert to Unix timestamp
-zero_unix_time_sec = int(time_obj.timestamp())
+        # Renombrar las columnas para mayor claridad
+        filtered_data.columns = ['Time', 'qX', 'qY', 'qZ', 'qW', 'PosX', 'PosY', 'PosZ']
 
-# Print extracted values
-print(f"Frame Rate: {frame_rate}")
-print(f"Capture Start Time: {capture_start_time}")
-print(f"Capture Start Time (Unix): {zero_unix_time_sec:.9f}")
-print(f"Total Exported Frames: {total_exported_frames}")
+        # Convertir 'Time' a formato numérico
+        filtered_data.loc[:, "Time"] = pd.to_numeric(filtered_data["Time"], errors="coerce")
 
-data = pd.read_csv(file_name)
+        # Añadir el tiempo de inicio
+        filtered_data.loc[:, "Time"] += zero_unix_time_sec
 
-# Eliminar filas irrelevantes y establecer encabezados correctos
-clean_data = data.iloc[4:].reset_index(drop=True)  # Tomar filas relevantes
-clean_data.columns = data.iloc[4].values          # Usar la fila como encabezado
-clean_data = clean_data.iloc[1:]                  # Omitir la fila redundante
+        # Eliminar filas con valores NaN
+        filtered_data = filtered_data.dropna()
 
-# Seleccionar las columnas importantes
-columns_of_interest = [
-    "Time (Seconds)",       # Tiempo
-    "qX", "qY", "qZ", "qW",     # Rotación (cuaternión)
-    "X", "Y", "Z"  # Posición
-]
-filtered_data = clean_data[columns_of_interest].dropna()  # Eliminar NaN
+        filtered_data["Time"] = filtered_data["Time"].apply(lambda x: f"{x:.9f}")
+        filtered_data["Time"] = filtered_data["Time"].astype(str)  # Asegura que todo sea de tipo str
 
-# Renombrar columnas para facilitar el formato
-filtered_data.columns = ["Time", "Quat_X", "Quat_Y", "Quat_Z", "Quat_W", "Pos_X", "Pos_Y", "Pos_Z"]
-
-# Asegurarse de que Time sea numérico antes de sumar
-filtered_data["Time"] = pd.to_numeric(filtered_data["Time"], errors="coerce")
-
-# here we add the beginning time 
-filtered_data["Time"] += zero_unix_time_sec
-
-# Formatear la columna Time para que tenga 9 decimales
-filtered_data["Time"] = filtered_data["Time"].apply(lambda x: f"{x:.9f}")
-
-
-# Convertir a texto con encabezado
-output_text = "#timestamp qx qy qz qw px py pz\n"
-output_text += "\n".join(
-    filtered_data.apply(lambda row: " ".join(map(str, row)), axis=1)
-)
-
-# Guardar como archivo de texto
-
-name_output_txt = file_name.split('.')[0]  # Split by '.' and take the first part
-output_file_name = 'groundtruth_'+ name_output_txt  + '.txt'
-
-with open(output_file_name, "w") as file:
-    file.write(output_text)
-
-output_file_name
+        return filtered_data
+    except Exception as e:
+        print(f"Error al procesar los datos: {e}")
+        return None
 
 
+# Función para guardar los datos procesados en un archivo de texto
+def save_output(filtered_data, file_name):
+    try:
+        output_text = "#timestamp qx qy qz qw px py pz\n"
+        output_text += "\n".join(
+            filtered_data.apply(lambda row: " ".join(map(str, row)), axis=1)
+        )
+
+        # Guardar el archivo de salida
+        name_output_txt = file_name.split('.')[0]
+        output_file_name = f'groundtruth_{name_output_txt}.txt'
+
+        with open(output_file_name, "w") as file:
+            file.write(output_text)
+
+        print(f"Archivo de salida guardado como {output_file_name}")
+        return output_file_name
+    except Exception as e:
+        print(f"Error al guardar el archivo de salida: {e}")
+        return None
+
+# Función principal
+def main():
+    # Configuración de argumentos de línea de comandos
+    parser = argparse.ArgumentParser(description="Procesar un archivo CSV con datos de captura y generar un archivo de texto de salida.")
+    parser.add_argument("file_name", help="Nombre del archivo CSV a procesar", type=str)
+
+    # Obtener el nombre del archivo desde los argumentos
+    args = parser.parse_args()
+
+    # Extraer metadatos del archivo CSV
+    metadata = extract_metadata(args.file_name)
+    if not metadata:
+        return
+
+    frame_rate, capture_start_time, total_exported_frames, zero_unix_time_sec = metadata
+
+    # Mostrar los metadatos extraídos
+    print(f"Frame Rate: {frame_rate}")
+    print(f"Capture Start Time: {capture_start_time}")
+    print(f"Capture Start Time (Unix): {zero_unix_time_sec:.9f}")
+    print(f"Total Exported Frames: {total_exported_frames}")
+
+    # Procesar los datos del archivo CSV
+    filtered_data = process_data(args.file_name, zero_unix_time_sec)
+    if filtered_data is None:
+        return
+
+    # Guardar los resultados procesados en un archivo de texto
+    save_output(filtered_data, args.file_name)
+
+if __name__ == "__main__":
+    main()
+
+# uso:
+#       primero, ir a la fila 7 y reemplazar "Frame,Time (Seconds),X,Y,Z,W,X,Y,Z,,,,,,,,,,,,," por  "Frame,Time (Seconds),qX,qY,qZ,qW,X,Y,Z,,,,,,,,,,,,,"
+#       si no esta en la fila 7, hay que cambiar la linea de codigo " df = pd.read_csv(file_name, skiprows=6)", que saltea las primeras 6 lineas.}
+# run:
+#       python3 reading_mocap_CSV.py robot-base.csv
+ 

@@ -1,8 +1,10 @@
 import numpy as np
 
 # Quaternion and position data provided by the MoCap CSV file
-qX, qY, qZ, qW = 0.504544, 0.494481, 0.498329, -0.502585  # Quaternion components
-pX, pY, pZ = -143.087402, 912.757263, -619.818909  # Position in 3D space (mm)
+
+# updated: 28-01-2025
+qX, qY, qZ, qW = 0.499705, 0.499586, 0.500601, -0.500107 # Quaternion components
+pX, pY, pZ = 208.424423,861.452393,-797.322632 #Position in 3D space (mm)
 
 # Normalize the quaternion to ensure it represents a valid rotation
 norm = np.sqrt(qX**2 + qY**2 + qZ**2 + qW**2)

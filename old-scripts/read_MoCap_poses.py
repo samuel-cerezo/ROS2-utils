@@ -3,8 +3,8 @@ import numpy as np
 import os
 
 # Path to the CSV file containing the robot poses
-#csv_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/Robot_base_calib.csv'
-csv_file = os.path.expandvars("$HOME/dev/environment_modeling/scripts/KUKA/Robot_base_calib.csv")
+csv_file = '/home/samuel/dev/environment_modeling/scripts/KUKA/Robot_base_calib.csv'
+#csv_file = os.path.expandvars("$HOME/dev/environment_modeling/scripts/KUKA/Robot_base_calib.csv")
 
 # List to store the poses of the RigidBody
 poses_rigidbody = []

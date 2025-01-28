@@ -140,9 +140,10 @@ def capture_images(pipeline, file_path, poses_file_path, hom_poses_file_path, ma
             # Write the robot pose to the text files
             with open(poses_file_path, "a") as pose_file:
                 pose_file.write(user_entry + '\n')
-
+            
+            # Convert np.float64 to float before writing
             with open(hom_poses_file_path, "a") as pose_file:
-                pose_file.write(str(robot_pose_hom) + '\n')
+                pose_file.write(', '.join([str(float(x)) for x in robot_pose_hom]) + '\n')      #  pose_file.write(str(robot_pose_hom) + '\n')
 
             # Capture and save image
             frames = pipeline.wait_for_frames()
