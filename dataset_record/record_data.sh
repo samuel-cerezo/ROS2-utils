@@ -38,26 +38,26 @@ else
 fi
 
 # Record the topics
+# echo "ros2 bag record started..."
+# ros2 bag record -o "$bag_file_name" \
+#   $topic_imu_accel \
+#   $topic_imu_gyro \
+#   $topic_imu_aligned \
+#   $topic_rgbd_syncro \
+#  $topic_joints
+
+# Record the topics
 echo "ros2 bag record started..."
 ros2 bag record -o "$bag_file_name" \
   $topic_imu_accel \
+  $topic_aligned_depth \
+  $topic_rgb \
+  $topic_point_cloud \
+  $topic_depth \
   $topic_imu_gyro \
   $topic_imu_aligned \
   $topic_rgbd_syncro \
   $topic_joints
-
-# Record the topics
-#echo "ros2 bag record started..."
-#ros2 bag record -o "$bag_file_name" \
-#  $topic_imu_accel \
-#  $topic_aligned_depth \
-#  $topic_rgb \
-#  $topic_point_cloud \
-#  $topic_depth \
-#  $topic_imu_gyro \
-#  $topic_imu_aligned \
-#  $topic_rgbd_syncro \
-#  $topic_joints
 
 # usage:
 #       bash /home/samuel/dev/environment_modeling/scripts/KUKA/dataset_record/record_data.sh <my_custom_bagfile_name>

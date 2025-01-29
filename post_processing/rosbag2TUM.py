@@ -164,7 +164,7 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
             msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
             if (joints_header_written == False):
                 #joint_header = msg.name
-                joint_header = ['joint_1', 'joint_2', 'joint_3', 'joint_4', 'joint_5', 'joint_6']
+                joint_header = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
                 #joint_header = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6']
 
                 position_file, velocity_file, effort_file = create_joint_data_files(joint_data_path,joint_header)
@@ -176,12 +176,12 @@ def extract_and_save_data(reader, typestore, rgb_path, depth_path, joint_data_pa
 
                 # Order the positions according to the expected joint order (A1 to A6)
                 # The expected order is the one in the 'msg.name' list
-                ordered_positions = [joint_name_to_position['joint_1'], 
-                                    joint_name_to_position['joint_2'], 
-                                    joint_name_to_position['joint_3'], 
-                                    joint_name_to_position['joint_4'], 
-                                    joint_name_to_position['joint_5'], 
-                                    joint_name_to_position['joint_6']]
+                ordered_positions = [joint_name_to_position['joint1'], 
+                                    joint_name_to_position['joint2'], 
+                                    joint_name_to_position['joint3'], 
+                                    joint_name_to_position['joint4'], 
+                                    joint_name_to_position['joint5'], 
+                                    joint_name_to_position['joint6']]
                 # Write the reordered positions to the file
                 write_joint_data(position_file, timestamp, ordered_positions)
                 #write_joint_data(position_file, timestamp, msg.position)
