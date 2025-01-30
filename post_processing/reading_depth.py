@@ -1,45 +1,25 @@
 import cv2
 import os
 import numpy as np
-
-# the idea is read the depth values in mm
+import argparse
+import random
 
 def create_paths(base_path, folder_name):
     """
     Generate file paths for RGB and depth data.
-
-    Args:
-        base_path (str): The base directory where the data folder is located.
-        folder_name (str): The specific folder name where the RGB and depth data are stored.
-
-    Returns:
-        tuple: A tuple containing the RGB path and depth path strings.
     """
-    # Construct paths for RGB and Depth data
     rgb_path = os.path.join(base_path, folder_name + '_data', 'rgb')
     depth_path = os.path.join(base_path, folder_name + '_data', 'depth')
-    
     return rgb_path, depth_path
 
 def load_depth_image(depth_image_path):
     """
     Load a depth image using OpenCV.
-
-    Args:
-        depth_image_path (str): The full file path of the depth image to load.
-
-    Returns:
-        np.ndarray: A NumPy array containing the depth image data.
-
-    Raises:
-        FileNotFoundError: If the image file is not found.
     """
     if not os.path.exists(depth_image_path):
         raise FileNotFoundError(f"Depth image file not found: {depth_image_path}")
     
-    # Read the image in unchanged format (to preserve depth information)
     img = cv2.imread(depth_image_path, cv2.IMREAD_UNCHANGED)
-    
     if img is None:
         raise ValueError(f"Failed to load image. Check if the file is a valid image: {depth_image_path}")
     
@@ -48,43 +28,46 @@ def load_depth_image(depth_image_path):
 def convert_to_meters(depth_image):
     """
     Convert depth image values to meters (assuming the image is in millimeters).
-
-    Args:
-        depth_image (np.ndarray): The depth image array with values in millimeters.
-
-    Returns:
-        np.ndarray: A NumPy array with depth values converted to meters.
     """
-    # Convert depth values to float and scale to meters
-    float_array = np.array(depth_image, dtype=float) * 0.001
-    return float_array
+    return np.array(depth_image, dtype=float) * 0.001
+
+def get_random_depth_image(depth_path):
+    """
+    Select a random depth image from the given path.
+    """
+    if not os.path.exists(depth_path):
+        raise FileNotFoundError(f"Depth directory not found: {depth_path}")
+    
+    images = [f for f in os.listdir(depth_path) if f.endswith('.png')]
+    if not images:
+        raise FileNotFoundError("No depth images found in the directory.")
+    
+    return random.choice(images)
 
 def main():
     """
     Main function to manage loading and processing of depth images.
     """
-    # Base file path and folder names
-    rosfile_name = 'd435_test1'
-    file_path = "/home/samuel/Desktop/"
-    #file_path = os.path.expandvars("$HOME/Desktop/")
-
-    # Generate paths for RGB and Depth images
-    rgb_path, depth_path = create_paths(file_path, rosfile_name)
+    parser = argparse.ArgumentParser(description="Process a depth image and convert values to meters.")
+    parser.add_argument("--input", required=True, help="Name of the ROS file (e.g., d435_test1)")
+    args = parser.parse_args()
     
-    # Depth image filename (can be parameterized or looped over a set of images)
-    depth_image_filename = '1728286188895709757.png'
-    depth_image_path = os.path.join(depth_path, depth_image_filename)
+    # Base file path
+    file_path = "/home/samuel/dev/environment_modeling/ROSBAGS"
+    
+    # Generate paths for RGB and Depth images
+    rgb_path, depth_path = create_paths(file_path, args.input)
     
     try:
-        # Load the depth image
-        depth_image = load_depth_image(depth_image_path)
+        depth_image_filename = get_random_depth_image(depth_path)
+        depth_image_path = os.path.join(depth_path, depth_image_filename)
         
-        # Convert depth values from millimeters to meters
+        depth_image = load_depth_image(depth_image_path)
         depth_in_meters = convert_to_meters(depth_image)
         
-        # Output depth values (in meters)
+        print(f'Processing depth image: {depth_image_filename}')
         print('Depth values in meters:')
-        print(depth_in_meters)
+        print(depth_in_meters[1:100])
     
     except (FileNotFoundError, ValueError) as e:
         print(f"Error: {e}")
