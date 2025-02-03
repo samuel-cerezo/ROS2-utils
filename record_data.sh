@@ -43,8 +43,9 @@ echo "ros2 bag record started..."
 ros2 bag record -o "$bag_file_name" \
   $topic_rgbd_syncro \
   $topic_imu_aligned \
-  $topic_joints
-  
+  $topic_joints \
+  --max-cache-size 3000000000
+
 #  $topic_point_cloud \
 
 #  $topic_imu_aligned \
