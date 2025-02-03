@@ -59,19 +59,15 @@ def process_data(file_name, zero_unix_time_sec):
         print(f"Error al procesar los datos: {e}")
         return None
 
-
 # Función para guardar los datos procesados en un archivo de texto
-def save_output(filtered_data, file_name):
+def save_output(filtered_data, output_file_name):
     try:
-        output_text = "#timestamp qx qy qz qw px py pz\n"
+        output_text = "#timestamp qx qy qz qw px py pz [mm]\n"
         output_text += "\n".join(
             filtered_data.apply(lambda row: " ".join(map(str, row)), axis=1)
         )
 
         # Guardar el archivo de salida
-        name_output_txt = file_name.split('.')[0]
-        output_file_name = f'groundtruth_{name_output_txt}.txt'
-
         with open(output_file_name, "w") as file:
             file.write(output_text)
 
@@ -85,13 +81,21 @@ def save_output(filtered_data, file_name):
 def main():
     # Configuración de argumentos de línea de comandos
     parser = argparse.ArgumentParser(description="Procesar un archivo CSV con datos de captura y generar un archivo de texto de salida.")
-    parser.add_argument("file_name", help="Nombre del archivo CSV a procesar", type=str)
+    parser.add_argument("--input", help="Nombre del dataset (sin la ruta completa)", type=str, required=True)
 
-    # Obtener el nombre del archivo desde los argumentos
+    # Obtener el nombre del dataset desde los argumentos
     args = parser.parse_args()
 
+    # Construir la ruta completa del archivo CSV
+    dataset_path = f"/home/samuel/dev/environment_modeling/ROSBAGS/{args.input}/{args.input}.csv"
+
+    # Verificar si el archivo existe
+    if not os.path.exists(dataset_path):
+        print(f"Error: El archivo {dataset_path} no existe.")
+        return
+
     # Extraer metadatos del archivo CSV
-    metadata = extract_metadata(args.file_name)
+    metadata = extract_metadata(dataset_path)
     if not metadata:
         return
 
@@ -104,12 +108,17 @@ def main():
     print(f"Total Exported Frames: {total_exported_frames}")
 
     # Procesar los datos del archivo CSV
-    filtered_data = process_data(args.file_name, zero_unix_time_sec)
+    filtered_data = process_data(dataset_path, zero_unix_time_sec)
     if filtered_data is None:
         return
 
+    # Obtener la carpeta donde está el archivo CSV
+    file_dir = os.path.dirname(dataset_path)
+    # Construir el nombre del archivo de salida
+    output_file_name = os.path.join(file_dir, f"groundtruth_{args.input}.txt")
+
     # Guardar los resultados procesados en un archivo de texto
-    save_output(filtered_data, args.file_name)
+    save_output(filtered_data, output_file_name)
 
 if __name__ == "__main__":
     main()
@@ -118,5 +127,7 @@ if __name__ == "__main__":
 #       primero, ir a la fila 7 y reemplazar "Frame,Time (Seconds),X,Y,Z,W,X,Y,Z,,,,,,,,,,,,," por  "Frame,Time (Seconds),qX,qY,qZ,qW,X,Y,Z,,,,,,,,,,,,,"
 #       si no esta en la fila 7, hay que cambiar la linea de codigo " df = pd.read_csv(file_name, skiprows=6)", que saltea las primeras 6 lineas.}
 # run:
-#       python3 reading_mocap_CSV.py robot-base.csv
+#       python3 reading_mocap_CSV.py --input nombre-dataset
+
+#INFO: (el archivo .csv tiene el mismo nombre que el dataset)
  
