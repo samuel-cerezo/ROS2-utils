@@ -6,6 +6,7 @@ from std_msgs.msg import Float64MultiArray
 import time
 import numpy as np
 import os
+import argparse
 
 class RobotPosePublisher(Node):
     def __init__(self, joint_positions_path, pose_file_path):
@@ -45,171 +46,105 @@ class RobotPosePublisher(Node):
 
         # initialize the timestamp for the last command
         self.last_command_time = None
-
+        
         # Timer to run periodically
-        self.timer = self.create_timer(0.004, self.publish_pose_from_joint_data)
+        #self.timer = self.create_timer(0.004, self.publish_pose_from_joint_data)        # 4ms between commands
+        self.timer = self.create_timer(0.05, self.publish_pose_from_joint_data)        # 100ms between commands
+
 
     def read_joint_header(self):
-        """Reads the joint header to determine the joint names and order."""
-        header_line = self.joint_file.readline().strip()  # Read the first line (header)
-        
-        # Split the line and remove the timestamp
+        header_line = self.joint_file.readline().strip()
         header_values = header_line.split()
         if header_values[0] == "#timestamp":
-            joint_names = header_values[1:]  # Everything after '#timestamp' is the joint names
+            joint_names = header_values[1:]
             self.get_logger().info(f"Detected joint header: {joint_names}")
             return joint_names
         else:
             raise ValueError("Invalid header format. The header should start with '#timestamp'.")
 
     def publish_pose_from_joint_data(self):
-        # Get the current time
         current_time = self.get_clock().now()
-
-        # Calculate and log the time difference since the last command
-        if self.last_command_time is not None:
-            time_diff = (current_time - self.last_command_time).nanoseconds / 1e6  # Convert nanoseconds to milliseconds
-            self.get_logger().info(f"Time since last command: {time_diff:.3f} ms")
-
-        # Update the last command time
+        #if self.last_command_time is not None:
+        #    time_diff = (current_time - self.last_command_time).nanoseconds / 1e6
+        #    self.get_logger().info(f"Time since last command: {time_diff:.3f} ms")
         self.last_command_time = current_time
         
         if self.joint_index < len(self.joint_data_lines):
             joint_line = self.joint_data_lines[self.joint_index].strip()
-            
-            # Skip comments (lines starting with '#')
             if joint_line.startswith('#'):
                 self.joint_index += 1
                 return
 
             joint_values = joint_line.split()
-            timestamp = float(joint_values[0])  # First value is the timestamp
-            joint_angles = list(map(float, joint_values[1:]))  # The rest are joint angles
+            timestamp = float(joint_values[0])
+            joint_angles = list(map(float, joint_values[1:]))
 
-            # Log joint values and timestamp using joint names from the header
             joint_log = ", ".join([f"{joint_name}: {angle}" for joint_name, angle in zip(self.joint_header, joint_angles)])
             self.get_logger().info(f"Publishing joint values at timestamp {timestamp:.9f}: {joint_log}")
 
-            # Reorder joint angles to match the order joint1, joint2, ..., joint6
             ordered_joint_angles = self.reorder_joint_angles(joint_angles)
-
-            # Publish the joint values to control the robot's motion
             self.publish_joint_commands(ordered_joint_angles)
-
-            # Wait for the robot to reach the position (Adjust the sleep time as needed)
-            #time.sleep(0.1)  # Time to wait for the robot to reach the desired joint position
-
-            # Get the transformation matrix for this timestamp using tool0 and base_link
             self.get_logger().info(f"Retrieving pose at timestamp {timestamp:.9f}")
             self.query_pose(timestamp)
-
-            # Increment joint index to move to the next set of joint values
             self.joint_index += 1
         else:
-            # Once all joint data has been processed, shutdown the node
             self.get_logger().info("All joint data processed. Shutting down.")
             rclpy.shutdown()
 
     def reorder_joint_angles(self, joint_angles):
-        """Reorders the joint angles to match the order joint1, joint2, ..., joint6."""
-        # Create a mapping of the correct joint order
-        #joint_order = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
-        joint_order = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6']
-
-
-        # Create a dictionary with joint names as keys and their respective angles as values
+        #joint_order = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6']
+        joint_order = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
         joint_dict = dict(zip(self.joint_header, joint_angles))
-
-        # Reorder the joint angles based on the correct order
         ordered_angles = [joint_dict[joint] for joint in joint_order]
-
         self.get_logger().info(f"Ordered joint angles: {ordered_angles}")
         return ordered_angles
 
     def publish_joint_commands(self, joint_angles):
-        """Publishes joint commands to the robot to move it."""
         msg = Float64MultiArray()
-        
-        # Publish the joint angles in the correct order
         msg.data = joint_angles
-
-        # Publish the joint command
         self.command_publisher.publish(msg)
         self.get_logger().info(f"Published joint command: {msg.data}")
 
     def query_pose(self, timestamp):
         try:
-            # Get the current transform between base_link and tool0
             trans = self.tf_buffer.lookup_transform('base_link', 'tool0', rclpy.time.Time())
-
-            # Extract rotation (quaternion) and translation (vector)
             rotation = trans.transform.rotation
             translation = trans.transform.translation
+            pose_data = f"{timestamp:.9f} {rotation.x} {rotation.y} {rotation.z} {rotation.w} "
+            pose_data += f"{translation.x} {translation.y} {translation.z}\n"
 
-            # Convert quaternion to a rotation matrix manually
-            rotation_matrix = self.quaternion_to_matrix(rotation)
-
-            # Format the pose data as translation + quaternion
-            pose_data = f"{timestamp:.9f} "
-            pose_data += f"{translation.x} {translation.y} {translation.z} "  # Translation vector (t)
-            pose_data += f"{rotation.x} {rotation.y} {rotation.z} {rotation.w}\n"  # Quaternion
-
-            # Write the header only once at the beginning
             if not self.header_written:
-                self.pose_file.write("# timestamp translation_x translation_y translation_z quaternion_x quaternion_y quaternion_z quaternion_w\n")
+                self.pose_file.write("#timestamp qx qy qz qw x y z\n")
                 self.header_written = True
-
-            # Write the pose data to the file
             self.pose_file.write(pose_data)
-            self.pose_file.flush()  # Ensure the data is written immediately
+            self.pose_file.flush()
 
-            # Log the pose (Translation + Quaternion)
             self.get_logger().info(f"Pose of tool0 w.r.t base_link:")
             self.get_logger().info(f"Translation: ({translation.x}, {translation.y}, {translation.z})")
             self.get_logger().info(f"Quaternion: ({rotation.x}, {rotation.y}, {rotation.z}, {rotation.w})")
-
-            # Log the rotation matrix
-            self.get_logger().info(f"Rotation Matrix (3x3): \n{rotation_matrix}")
-
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             self.get_logger().error(f"Error getting transform: {e}")
 
-    def quaternion_to_matrix(self, quat):
-        """Convert a quaternion to a 3x3 rotation matrix."""
-        x, y, z, w = quat.x, quat.y, quat.z, quat.w
-
-        # Calculate the rotation matrix from the quaternion
-        R = np.array([
-            [1 - 2 * (y**2 + z**2), 2 * (x * y - z * w), 2 * (x * z + y * w)],
-            [2 * (x * y + z * w), 1 - 2 * (x**2 + z**2), 2 * (y * z - x * w)],
-            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x**2 + y**2)]
-        ])
-
-        return R
-
     def __del__(self):
-        # Close the files when the node is destroyed
         self.joint_file.close()
         self.pose_file.close()
 
 
-# -----------------------------------------------------------------------------------------------------
 def main(args=None):
-    rclpy.init(args=args)
-
-    # Define the paths for joint positions and pose data
-    dataset_path = '/home/samuel/dev/environment_modeling/ROSBAGS/old/iisy_random_motion_data'
-    #dataset_path = os.path.expandvars("$HOME/dev/environment_modeling/ROSBAGS/old/iisy_random_motion_data")
-
-    joint_positions_path = dataset_path + '/joint_data/joint_positions.txt'         #source file
-    pose_file_path = dataset_path + '/pose_data2.txt'                                #destination file
-
-    # Initialize the RobotPosePublisher with the file paths
+    parser = argparse.ArgumentParser(description='Robot Pose Publisher')
+    parser.add_argument('--input', type=str, required=True, help='Folder containing joint data')
+    args = parser.parse_args()
+    
+    rclpy.init(args=None)
+    dataset_path = os.path.join('/home/samuel/dev/environment_modeling/ROSBAGS', args.input)
+    joint_positions_path = os.path.join(dataset_path, 'joint_data/joint_positions.txt')
+    pose_file_path = os.path.join(dataset_path, 'flange_poses.txt')
+    
     robot_pose_publisher = RobotPosePublisher(joint_positions_path, pose_file_path)
-
     rclpy.spin(robot_pose_publisher)
     robot_pose_publisher.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

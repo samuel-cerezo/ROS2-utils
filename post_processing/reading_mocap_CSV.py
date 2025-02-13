@@ -24,7 +24,9 @@ def extract_metadata(file_name):
         # Convertir la hora de inicio de captura a objeto datetime
         time_obj = datetime.strptime(capture_start_time, "%Y-%m-%d %I.%M.%S.%f %p")
         # Convertir a timestamp Unix
-        zero_unix_time_sec = int(time_obj.timestamp())
+        #zero_unix_time_sec = int(time_obj.timestamp())
+        zero_unix_time_sec = time_obj.timestamp()  # No usar int(), para no perder mseg
+
         return frame_rate, capture_start_time, total_exported_frames, zero_unix_time_sec
     except Exception as e:
         print(f"Error al leer el archivo CSV: {e}")
@@ -115,7 +117,8 @@ def main():
     # Obtener la carpeta donde está el archivo CSV
     file_dir = os.path.dirname(dataset_path)
     # Construir el nombre del archivo de salida
-    output_file_name = os.path.join(file_dir, f"groundtruth_{args.input}.txt")
+#    output_file_name = os.path.join(file_dir, f"groundtruth_{args.input}.txt")
+    output_file_name = os.path.join(file_dir, f"groundtruth.txt")
 
     # Guardar los resultados procesados en un archivo de texto
     save_output(filtered_data, output_file_name)
@@ -129,5 +132,5 @@ if __name__ == "__main__":
 # run:
 #       python3 reading_mocap_CSV.py --input nombre-dataset
 
-#INFO: (el archivo .csv tiene el mismo nombre que el dataset)
+#INFO: (el archivo .csv tiene el mismo nombre que el dataset ubicado en la carpeta ROSBAGS)
  
