@@ -18,7 +18,7 @@ T:
 
 
 
-  - source_frame: color_optical   #optical-calib
+  - source_frame: color_optical   #optical-calib not updated with the last calib
     destination_frame: robot_flange
     matrix:
       rows: 4

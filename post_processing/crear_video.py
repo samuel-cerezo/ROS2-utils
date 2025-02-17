@@ -50,10 +50,11 @@ if __name__ == "__main__":
     parser.add_argument("--input", required=True, help="Carpeta dentro de ROSBAGS donde se encuentran associations.txt y la carpeta rgb/")
     args = parser.parse_args()
     
-    input_path = os.path.join(BASE_PATH, args.input)
+    dataset_name = args.input
+    input_path = os.path.join(BASE_PATH, dataset_name)
     associations_file = os.path.join(input_path, "associations.txt")
     image_folder = os.path.join(input_path, "rgb")
-    output_video = os.path.join(input_path, "output_video.mp4")
+    output_video = os.path.join(input_path, f"{dataset_name}.mp4")
     
     generate_video(associations_file, image_folder, output_video)
 

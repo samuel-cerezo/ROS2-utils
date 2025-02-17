@@ -17,7 +17,7 @@ $VENTANA1_CMD
 exec bash
 "
 
-sleep 5
+sleep 7
 
 # Window 2: Configure and activate the robot_manager
 gnome-terminal -- bash -c "
@@ -28,6 +28,9 @@ if [ \$? -eq 0 ]; then
   ros2 lifecycle set robot_manager activate;
 fi; exit
 "
+
+sleep 7
+
 
 # Window 3: Wait for the processes in Window 2 to finish and then execute the Python script
 gnome-terminal -- bash -c "
