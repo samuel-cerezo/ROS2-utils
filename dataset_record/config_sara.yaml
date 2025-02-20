@@ -1,0 +1,14 @@
+enable_color: true
+enable_depth: true
+align_depth.enable: true
+enable_rgbd: true
+enable_sync: true
+pointcloud.enable: false
+enable_gyro: true
+enable_accel: true
+publish_tf: false
+unite_imu_method: 1
+tf_publish_rate: 0.0
+rgb_camera.color_profile: 848x480x30
+depth_module.depth_profile: 848x480x30
+depth_module.infra_profile: 848x480x30
