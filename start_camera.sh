@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Lanzar el nodo RealSense en una nueva terminal
-gnome-terminal -- bash -c "ros2 launch realsense2_camera rs_launch_get_params_from_yaml.py config_file:=/home/samuel/dev/environment_modeling/scripts/KUKA/dataset_record/config.yaml; exec bash"
+gnome-terminal -- bash -c "ros2 launch realsense2_camera rs_launch_get_params_from_yaml.py config_file:=/home/samuel/dev/environment_modeling/scripts/KUKA/dataset_record/config_samuel.yaml; exec bash"
 
 # Esperar 3 segundos para asegurarse de que el nodo está corriendo
 sleep 3
