@@ -64,7 +64,7 @@ def process_data(file_name, zero_unix_time_sec):
 # Función para guardar los datos procesados en un archivo de texto
 def save_output(filtered_data, output_file_name):
     try:
-        output_text = "#timestamp qx qy qz qw px py pz [mm]\n"
+        output_text = "#timestamp qx qy qz qw tx ty tz [mm]\n"
         output_text += "\n".join(
             filtered_data.apply(lambda row: " ".join(map(str, row)), axis=1)
         )
@@ -89,7 +89,8 @@ def main():
     args = parser.parse_args()
 
     # Construir la ruta completa del archivo CSV
-    dataset_path = f"/home/samuel/dev/environment_modeling/ROSBAGS/{args.input}/{args.input}.csv"
+    #dataset_path = f"/home/samuel/dev/environment_modeling/ROSBAGS/{args.input}/{args.input}.csv"
+    dataset_path = f"/Volumes/SSD/archivos/KUKA_notebook/dev/environment_modeling/ROSBAGS/{args.input}/{args.input}.csv"
 
     # Verificar si el archivo existe
     if not os.path.exists(dataset_path):
