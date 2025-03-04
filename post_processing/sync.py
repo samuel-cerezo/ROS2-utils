@@ -153,14 +153,15 @@ def plot_data(synchronized_data):
     ])
 
     # Window size for smoothing filter
-    window_size = 20
+    window_size_est = 80
+    window_size_imu = 15
 
     # Define start time as 11 seconds after the first timestamp
-    start_time = synchronized_data['timestamp'].min() + 11
+    start_time = synchronized_data['timestamp'].min() + 12
     synchronized_data = synchronized_data[synchronized_data['timestamp'] >= start_time]
 
-    # Limit visualization to 3 seconds
-    max_time = start_time + 3.5
+    # Limit visualization to 3.5 seconds
+    max_time = start_time + 20
     synchronized_data = synchronized_data[synchronized_data['timestamp'] <= max_time]
 
     ### Angular velocity estimation
@@ -172,8 +173,8 @@ def plot_data(synchronized_data):
     angular_velocities_coord_imu = np.dot(transformation_matrix.T, angular_velocities.T).T
 
     # Apply smoothing filter
-    angular_velocities_coord_imu_smooth = uniform_filter1d(angular_velocities_coord_imu[:, 0], size=window_size)
-    gyro_smooth = uniform_filter1d(synchronized_data['gyro_x'], size=window_size)
+    angular_velocities_coord_imu_smooth = uniform_filter1d(angular_velocities_coord_imu[:, 0], size=window_size_est)
+    gyro_smooth = uniform_filter1d(synchronized_data['gyro_x'], size=window_size_imu)
 
     ### Compute time step (sampling interval)
     time_step = np.mean(np.diff(timestamps))  # Average time step in seconds
@@ -184,17 +185,32 @@ def plot_data(synchronized_data):
     # Convertir desfase a milisegundos
     delay_ms = (delay_samples) * time_step_ms
 
+    # Ajustar el tiempo para que comience desde cero
+    time_relative = timestamps[1:] - timestamps[1]
+    time_imu_relative = synchronized_data['timestamp'] - synchronized_data['timestamp'].iloc[0]
+
+
+
     ### Plot results
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
-
     # Plot angular velocity
-    ax1.plot(timestamps[1:], angular_velocities_coord_imu_smooth, label='ωz (estimated)', color='r', linestyle='-', linewidth=2)
-    ax1.plot(synchronized_data['timestamp'], gyro_smooth, label='ωz (IMU)', color='black', linestyle='-', linewidth=2)
+        # Plot angular velocity
+    ax1.plot(time_relative, angular_velocities_coord_imu_smooth, label='estimated', color='r', linestyle='-', linewidth=2)
+    ax1.plot(time_imu_relative, gyro_smooth, label='IMU gyr', color='black', linestyle='-', linewidth=2)
+    #ax1.plot(timestamps[1:], angular_velocities_coord_imu_smooth, label='estimated', color='r', linestyle='-', linewidth=2)
+    #ax1.plot(synchronized_data['timestamp'], gyro_smooth, label='IMU', color='black', linestyle='-', linewidth=2)
 
-    ax1.set_xlabel('unix time [s]')
+    ax1.set_xlabel('time [s]')
     ax1.set_ylabel('angular velocity [rad/s]')
     # Agregar leyenda con fondo blanco y borde negro
-    ax1.legend(facecolor='white', edgecolor='black', loc='upper left')
+    ax1.legend(facecolor='white', edgecolor='black', loc='upper right')
+    # Definir los ticks del eje X cada 2 segundos
+    ax1.set_xticks(np.arange(0, max(time_relative), 1.5))
+    # Establecer los límites del eje X
+    ax1.set_xlim([0, max(time_relative)])
+
+    ax1.grid(True, which='both', linestyle='--', linewidth=0.5)  # 'both' activa grilla menor y mayor
+
 
     #ax1.set_title('Angular Velocity on')
     ax1.grid(True)
@@ -209,18 +225,19 @@ def plot_data(synchronized_data):
     # Filtrar los valores dentro del rango deseado
     valid_indices = (lags >= min_lag_ms) & (lags <= max_lag_ms)
     lags_filtered = lags[valid_indices]
-    cross_corr_filtered = cross_corr[valid_indices]
+    cross_corr_filtered = abs(cross_corr[valid_indices])
 
     # Graficar la correlación cruzada en el rango limitado
     ax2.plot(lags_filtered, cross_corr_filtered, color='blue', linewidth=2)
     #ax2.axvline(x=delay_ms, color='red', linestyle='--', label=f'Estimated Delay: {delay_ms:.2f} ms')
     # Establecer las marcas de los ejes X y Y con los intervalos deseados
     ax2.set_xticks(np.arange(min_lag_ms, max_lag_ms + 1, 10))  # Intervalo de 10 ms para el eje X
-    ax2.set_yticks(np.arange(-0.1, 0.4, 0.05))  # Intervalo de 0.01 para el eje Y
+    ax2.set_yticks(np.arange(0, max(cross_corr_filtered), 0.1))  # Intervalo de 0.01 para el eje Y
+    ax2.set_xlim([min_lag_ms, max_lag_ms])
 
-    ax2.set_xlabel('temporal offset [ms])')
+    ax2.set_xlabel('temporal offset [ms]')
     ax2.set_ylabel('Cross-Correlation')
-    ax2.set_title('FFT-Based Cross-Correlation')
+
     ax2.grid(True, which='both', linestyle='--', linewidth=0.5)  # 'both' activa grilla menor y mayor
 
     plt.tight_layout()

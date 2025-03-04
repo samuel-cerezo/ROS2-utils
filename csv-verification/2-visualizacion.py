@@ -3,6 +3,7 @@ import argparse
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 
 def load_data(csv_file):
     # Read the CSV file, skipping metadata rows
@@ -20,82 +21,84 @@ def load_data(csv_file):
 
 def check_quaternions(data):
     # Check if quaternions are normalized
-    if 'qW' in data.columns and 'qX' in data.columns and 'qY' in data.columns and 'qZ' in data.columns:
+    if {'qW', 'qX', 'qY', 'qZ'}.issubset(data.columns):
         for index, row in data.iterrows():
             norm = (row['qX']**2 + row['qY']**2 + row['qZ']**2 + row['qW']**2)**0.5
             if abs(norm - 1) > 0.01:  # 1% tolerance
                 print(f"Warning: The quaternion in frame {row['Frame']} is not normalized.")
-
     else:
         print("No quaternions found in the file.")
 
-def plot_trajectory(data, folder_path):
-    # Extract positions X, Y, Z
-    x = np.array(data['X'])
-    y = np.array(data['Y'])
-    z = np.array(data['Z'])
+def plot_trajectory(data):
 
-    # 2D Plot (in a new figure)
-    fig2d = plt.figure(figsize=(8, 6))
-    plt.plot(x, y, label='2D Trajectory (XY)')
-    # Highlight the starting point
-    plt.plot(x[0], y[0], 'go', label='Start')  # Start point (green)
-    # Highlight the end point
-    plt.plot(x[-1], y[-1], 'ro', label='End')  # End point (red)
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.legend()
-    fig2d.suptitle('2D Trajectory', fontsize=14)  # Set the title of the window
-    fig2d.tight_layout()
-    # Save the 2D plot as a PNG
-    fig2d.savefig(os.path.join(folder_path, 'trajectory_2d.png'))
+    # Extraer posiciones X, Y, Z
+    x = data['X'].values
+    y = data['Y'].values
+    z = data['Z'].values
 
-    # 3D Plot (in a separate figure)
-    fig3d = plt.figure(figsize=(8, 6))
-    ax = fig3d.add_subplot(111, projection='3d')
-    ax.plot(x, y, z, label='3D Trajectory')
-    # Highlight the starting point
-    ax.scatter(x[0], y[0], z[0], color='green', s=100, label='Start')  # Start point (green)
-    # Highlight the end point
-    ax.scatter(x[-1], y[-1], z[-1], color='red', s=100, label='End')  # End point (red)
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    plt.legend()
-    fig3d.suptitle('3D Trajectory', fontsize=14)  # Set the title of the window
-    fig3d.tight_layout()
-    # Save the 3D plot as a PNG
-    fig3d.savefig(os.path.join(folder_path, 'trajectory_3d.png'))
+    # Aplicar estilo limpio
+    plt.style.use("seaborn-v0_8-muted")
 
-    # Plot quaternion components (qX, qY, qZ, qW)
-    if 'qX' in data.columns and 'qY' in data.columns and 'qZ' in data.columns and 'qW' in data.columns:
-        frames = data['Frame'].values  # Convert to 1D array
-        qX = data['qX'].values  # Convert to 1D array
-        qY = data['qY'].values  # Convert to 1D array
-        qZ = data['qZ'].values  # Convert to 1D array
-        qW = data['qW'].values  # Convert to 1D array
+    # 2D Plot mejorado
+    plt.figure(figsize=(8, 6))
+    plt.gca().set_facecolor('white')  # Fondo blanco
+    plt.plot(x, y, color='navy', linewidth=2, alpha=0.8)
+    plt.xlabel('X [mm]', labelpad=5, fontsize=16)  # Agregar espacio extra para la etiqueta X
+    plt.ylabel('Y [mm]', labelpad=5, fontsize=16)  # Agregar espacio extra para la etiqueta Z
+    plt.grid(True, linestyle='--', alpha=0.6)
+    # Aumentar tamaño de las marcas de los ejes
+    plt.tick_params(axis='both', which='major', labelsize=14)
 
-        # Quaternion Components Plot (in a new figure)
-        fig_quaternions = plt.figure(figsize=(8, 6))
-        plt.plot(frames, qX, label='qX')
-        plt.plot(frames, qY, label='qY')
-        plt.plot(frames, qZ, label='qZ')
-        plt.plot(frames, qW, label='qW')
-        plt.xlabel('Frame')
-        plt.ylabel('Component')
-        plt.title('Quaternion Components vs Frames')
-        plt.legend()
+    # Guardar la figura 2D
+    plt.savefig("2D.png", dpi=300, bbox_inches='tight', transparent=False)
+    plt.clf()  # Limpiar la figura para la siguiente
 
-        # Add more ticks on the x-axis for better visibility
-        tick_positions = np.arange(0, len(frames), step=500)
-        plt.xticks(tick_positions, frames[tick_positions], rotation=45)  # Set the ticks with labels
+    # 3D Plot mejorado
+    fig = plt.figure(figsize=(8, 6))
+    fig.patch.set_facecolor('white')  # Fondo de la figura blanco
+    ax = fig.add_subplot(111, projection='3d')
 
-        fig_quaternions.suptitle('Quaternion Components', fontsize=14)  # Set the title of the window
-        fig_quaternions.tight_layout()
-        # Save the quaternion plot as a PNG
-        fig_quaternions.savefig(os.path.join(folder_path, 'quaternions.png'))
+    # Establecer las paredes 3D como blancas
+    ax.w_xaxis.pane.fill = False  # Desactiva el pane de color
+    ax.w_yaxis.pane.fill = False
+    ax.w_zaxis.pane.fill = False
 
-    plt.close('all')  # Close all figures to avoid memory overflow
+    ax.set_facecolor('white')  # Fondo blanco para el área de la gráfica
+
+    # Crear degradado de color
+    cmap = plt.get_cmap("viridis")
+    colors = cmap(np.linspace(0, 1, len(x)))
+
+    for i in range(len(x) - 1):
+        #ax.plot(x[i:i+2], y[i:i+2], z[i:i+2], color=colors[i], linewidth=2, alpha=0.9)
+        #ax.plot(x[i:i+2], z[i:i+2], y[i:i+2], color=colors[i], linewidth=2, alpha=0.9)  #tr
+        ax.plot(z[i:i+2], x[i:i+2],y[i:i+2], color=colors[i], linewidth=2, alpha=0.9) #tt y tr
+
+    # Ajustar etiquetas con espacio adicional para evitar corte
+    ax.set_xlabel('Z [mm]', labelpad=8, fontsize=14)
+    ax.set_ylabel('X [mm]', labelpad=8, fontsize=14)
+    ax.set_zlabel('Y [mm]', labelpad=8, fontsize=14)
+    # Aumentar tamaño de las marcas de los ejes
+    plt.tick_params(axis='both', which='major', labelsize=12)
+
+    # Ajustar el espaciado de los ticks en 3D (tr)
+    #ax.set_yticks(np.arange(-100, 501, step=100))
+    #ax.set_xticks(np.arange(-300, -700, step=-100))
+    #ax.set_zticks(np.arange(950, 1351, step=100))
+    
+    # Ajustar el espaciado de los ticks en 3D (tt)
+    ax.set_yticks(np.arange(50, 501, step=100))
+    ax.set_xticks(np.arange(-651, -250, step=100))
+    ax.set_zticks(np.arange(950, 1351, step=100))
+
+    # Ajustar vista para mejor percepción de la trayectoria
+    ax.view_init(elev=20, azim=125)
+
+    # Guardar la figura 3D
+    plt.savefig("3D.png", dpi=300, transparent=False)
+    plt.clf()  # Limpiar la figura para evitar superposición
+
+
 
 def main():
     parser = argparse.ArgumentParser(description="Analysis of OptiTrack position and rotation data")
@@ -103,18 +106,14 @@ def main():
     args = parser.parse_args()
 
     # Path to the CSV file
-    folder_path = f'/Volumes/SSD/archivos/KUKA_notebook/dev/environment_modeling/ROSBAGS/{args.input}/'
-    #folder_path = f'/home/samuel/dev/environment_modeling/ROSBAGS/{args.input}/'
-    csv_file = os.path.join(folder_path, f'{args.input}.csv')
+    folder_path = f'/Volumes/SSD/archivos/KUKA_dev/environment_modeling/ROSBAGS/{args.input}/'
+    csv_file = os.path.join(folder_path, 'groundtruth_raw.csv')
 
     # Load the data
     data = load_data(csv_file)
     if data is not None:
-        # Check quaternions
         check_quaternions(data)
-
-        # Plot the trajectories and orientations, and save the figures
-        plot_trajectory(data, folder_path)
+        plot_trajectory(data)
 
 if __name__ == "__main__":
     main()
