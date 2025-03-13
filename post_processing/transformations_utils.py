@@ -144,9 +144,9 @@ def compute_camera_world_positions(poses_flange, T_world_base_marker, T_robot_ba
 
     Parameters:
         poses_flange (list of tuples): Each tuple contains rotation and translation information for a flange pose.
-        T_world_base_marker (numpy.ndarray): 4x4 transformation matrix from the world to the base marker.
-        T_robot_base_base_marker (numpy.ndarray): 4x4 transformation matrix from the robot base to the base marker.
-        T_robot_flange_rgb (numpy.ndarray): 4x4 transformation matrix from the robot flange to the RGB camera.
+        T_world_base_marker (numpy.ndarray): 4x4 transformation matrix from the base marker to the world.
+        T_robot_base_base_marker (numpy.ndarray): 4x4 transformation matrix from the  base marker to robot base.
+        T_robot_flange_rgb (numpy.ndarray): 4x4 transformation matrix from the RGB camera to robot flange.
 
     Returns:
         tuple: 
@@ -179,10 +179,10 @@ def compute_camera_world_positions(poses_flange, T_world_base_marker, T_robot_ba
 
 def compute_camera_world_positions_gt(poses_gt, T_rgb_flange_markers):
     """
-    Computes the world positions and orientations (as quaternions) of a camera given a set of ground truth poses.
+    Computes the world positions and orientations (as quaternions) of a camera given a set of ground truth poses (flange-markers).
 
     Parameters:
-        poses_gt (list of tuples): Each tuple contains rotation and translation information for a ground truth pose.
+        poses_gt (list of tuples): Each tuple contains rotation and translation information for a ground truth pose (flange-markers).
         T_rgb_flange_markers (numpy.ndarray): 4x4 transformation matrix from the RGB camera to the flange markers.
 
     Returns:
@@ -209,4 +209,4 @@ def compute_camera_world_positions_gt(poses_gt, T_rgb_flange_markers):
         quaternion = R.from_matrix(rotation_matrix).as_quat()
         camera_world_orientations_gt.append(quaternion)
     
-    return np.array(camera_world_orientations_gt),np.array(camera_world_positions_gt)
+    return np.array(camera_world_orientations_gt), np.array(camera_world_positions_gt)
