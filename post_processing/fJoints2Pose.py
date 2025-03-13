@@ -114,7 +114,7 @@ class RobotPosePublisher(Node):
             pose_data += f"{1000*translation.x} {1000*translation.y} {1000*translation.z}\n"
 
             if not self.header_written:
-                self.pose_file.write("#timestamp qx qy qz qw x y z[mm]\n")
+                self.pose_file.write("#timestamp qx qy qz qw x y z\n")
                 self.header_written = True
             self.pose_file.write(pose_data)
             self.pose_file.flush()
