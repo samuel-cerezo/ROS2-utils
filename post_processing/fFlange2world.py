@@ -4,7 +4,7 @@ import yaml
 from scipy.spatial.transform import Rotation as R
 import os
 import argparse
-from transformations_utils import *
+from alignment_utils import *
 
 def main():
     # pointing to the dataset folder
@@ -14,8 +14,11 @@ def main():
         
     dataset_path = os.path.join(args.path)
     # we retrieve the data from the files
-    timestamps_flange, poses_flange = load_poses(os.path.join(dataset_path, "robot_data/flange_poses.txt")) # flange wrt base robot
-    timestamps_gt, poses_gt = load_poses(os.path.join(dataset_path, "groundtruth.txt"))    # flange-markers wrt world
+    _ , poses_flange = load_poses(os.path.join(dataset_path, "robot_data/flange_poses.txt")) # flange wrt base robot
+    _ , poses_gt = load_poses(os.path.join(dataset_path, "groundtruth.txt"))    # flange-markers wrt world
+    
+    # 
+    
     transforms = load_yaml_transformations(os.path.join(dataset_path,  "extrinsics.yaml"))  # to obtain the transform matrixs
 
     #----- retrieving all transformations (T_target_source) -------
@@ -31,8 +34,8 @@ def main():
     T_world_robot_base = T_world_base_marker @ T_base_marker_robot_base                      # robot base --> world
 
     # we convert the data into a same world reference frame
-    camera_world_q, camera_world_positions  = compute_camera_world_positions(poses_flange, T_world_base_marker, T_robot_base_base_marker, T_robot_flange_rgb)
-    camera_world_q_gt, camera_world_positions_gt = compute_camera_world_positions_gt(poses_gt, T_rgb_flange_markers)
+    _ , camera_world_positions  = compute_camera_world_positions(poses_flange, T_world_base_marker, T_robot_base_base_marker, T_robot_flange_rgb)
+    _ , camera_world_positions_gt = compute_camera_world_positions_gt(poses_gt, T_rgb_flange_markers)
 
     # plotting
     fig = plt.figure()

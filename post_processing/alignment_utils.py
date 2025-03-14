@@ -5,23 +5,96 @@ from scipy.spatial.transform import Rotation as R
 import os
 import argparse
 
-def compute_ate_rmse(estimated_positions, groundtruth_positions):   
+def process_timestamps(dataset_path):
     """
-    Computes the Absolute Trajectory Error (ATE) based on Root Mean Square Error (RMSE).
-
-    Parameters:
-    - estimated_positions: np.array of shape (N,3) with estimated positions (X, Y, Z)
-    - groundtruth_positions: np.array of shape (N,3) with ground truth positions (X, Y, Z)
-
-    Returns:
-    - ATE RMSE (float)
-    """
-    assert estimated_positions.shape == groundtruth_positions.shape, "Trajectories must have the same length"
-
-    errors = np.linalg.norm(estimated_positions - groundtruth_positions, axis=1)
-    ate_rmse = np.sqrt(np.mean(errors**2))
+    Reads and processes timestamps from association, flange poses, and ground truth files.
+    Filters timestamps to a common range and finds the nearest match for each association timestamp.
     
-    return ate_rmse
+    Args:
+        dataset_path (str): Path to the dataset directory.
+    
+    Returns:
+        tuple: (ts_assoc, matched_ts_flange, matched_flange_poses, matched_ts_gt, matched_gt_poses)
+    """
+    # Define file paths
+    association_file = os.path.join(dataset_path, "associations.txt")
+    flange_poses_file = os.path.join(dataset_path, "robot_data/flange_poses.txt")
+    gt_file = os.path.join(dataset_path, "groundtruth.txt")
+
+    # Read association timestamps
+    ts_assoc = []
+    with open(association_file, 'r') as f:
+        for line in f:
+            if line.startswith('#'):
+                continue
+            values = list(line.split())
+            ts_assoc.append(float(values[0]))
+
+    # Read flange poses timestamps and data
+    ts_flange, flange_poses = [], []
+    with open(flange_poses_file, 'r') as f:
+        for line in f:
+            if line.startswith('#'):
+                continue
+            values = list(line.split())
+            ts = float(values[0])
+            ts_flange.append(ts)
+            q = values[1:5]  # Quaternion (qx, qy, qz, qw)
+            t = values[5:8]  # Translation (tx, ty, tz)
+            flange_poses.append((q, t))
+
+    # Read ground truth timestamps and data
+    ts_gt, gt_poses = [], []
+    with open(gt_file, 'r') as f:
+        for line in f:
+            if line.startswith('#'):
+                continue
+            values = list(line.split())
+            ts = float(values[0])
+            ts_gt.append(ts)
+            q = values[1:5]  # Quaternion (qx, qy, qz, qw)
+            t = values[5:8]  # Translation (tx, ty, tz)
+            gt_poses.append((q, t))
+
+    # Determine the common timestamp range
+    min_ts = max(min(ts_assoc), min(ts_flange), min(ts_gt))
+    max_ts = min(max(ts_assoc), max(ts_flange), max(ts_gt))
+
+    # Filter timestamps within the common range
+    ts_assoc = [t for t in ts_assoc if min_ts <= t <= max_ts]
+    ts_flange, flange_poses = zip(*[(t, p) for t, p in zip(ts_flange, flange_poses) if min_ts <= t <= max_ts])
+    ts_gt, gt_poses = zip(*[(t, p) for t, p in zip(ts_gt, gt_poses) if min_ts <= t <= max_ts])
+
+    # Convert back to lists
+    ts_flange, flange_poses = list(ts_flange), list(flange_poses)
+    ts_gt, gt_poses = list(ts_gt), list(gt_poses)
+
+    # Function to find the nearest timestamp
+    def find_nearest(ts_list, target):
+        ts_list = np.array(ts_list, dtype=float)  # Ensure array of floats
+        target = float(target)  # Ensure target is float
+        idx = np.argmin(np.abs(ts_list - target))
+        return ts_list[idx]
+
+    # Match each association timestamp with the closest flange and ground truth timestamp
+    matched_ts_flange, matched_flange_poses = [], []
+    matched_ts_gt, matched_gt_poses = [], []
+
+    for ts in ts_assoc:
+        nearest_flange = find_nearest(ts_flange, ts)
+        nearest_gt = find_nearest(ts_gt, ts)
+
+        matched_ts_flange.append(nearest_flange)
+        matched_flange_poses.append(flange_poses[ts_flange.index(nearest_flange)])
+
+        matched_ts_gt.append(nearest_gt)
+        matched_gt_poses.append(gt_poses[ts_gt.index(nearest_gt)])
+
+    # Ensure all sets have the same length
+    assert len(ts_assoc) == len(matched_ts_flange) == len(matched_ts_gt), "Data sets do not match in size"
+    
+    return ts_assoc, matched_ts_flange, matched_flange_poses, matched_ts_gt, matched_gt_poses
+
 
 def load_yaml_transformations(yaml_path):
     """
@@ -163,8 +236,7 @@ def compute_camera_world_positions(poses_flange, T_world_base_marker, T_robot_ba
         # Compute the transformed pose in the world frame
         T_transformed = (T_world_base_marker @ 
                          np.linalg.inv(T_robot_base_base_marker) @ 
-                         T_hom @ 
-                         T_robot_flange_rgb)
+                         T_hom @ T_robot_flange_rgb)
         
         # Extract the translation component (position)
         position = T_transformed[:3, 3]
