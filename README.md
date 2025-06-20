@@ -1,88 +1,112 @@
-# D435 ROS2
 
-The **D435 ROS2** repository provides an interface for the Intel RealSense D435 depth camera within the Robot Operating System 2 (ROS2). This project aims to facilitate the integration and utilization of the D435 camera in robotics applications by leveraging ROS2's capabilities.
+# ROS2 Utils – Data Acquisition and Processing Tools
 
-## Overview
+This repository provides a collection of ROS 2 utilities and scripts developed during a research stay, aimed at supporting data collection, calibration, trajectory recording, and post-processing in robotics applications.
 
-The Intel RealSense D435 is a versatile depth camera designed for various applications such as robotics, computer vision, and augmented reality. This repository offers a comprehensive ROS2 wrapper for the D435 camera, enabling users to access its features and functionalities seamlessly. The integration allows for the publication of camera data, including color and depth images, IMU data, and point clouds, making it suitable for a range of robotic applications.
+These tools were used in experiments involving real-time trajectory logging, coordinate transformation, depth data handling, and robot kinematics, providing a modular and reusable framework for research in robotic systems.
 
-## Features
+---
 
-- **Depth and Color Streaming**: Stream both depth and color images from the D435 camera.
-- **IMU Integration**: Access inertial measurement unit (IMU) data for motion tracking and orientation sensing.
-- **Point Cloud Generation**: Generate point clouds for 3D mapping and object recognition tasks.
-- **Flexible Configuration**: Easily configure camera parameters, including resolution, frame rate, and filters.
-- **Multi-Camera Support**: Support for multiple D435 cameras running concurrently, allowing for complex setups.
+## 📁 Repository Structure
 
-## Installation
+### `aditional-scripts/`
+Utility scripts for handling motion capture data, robot kinematics, and trajectory generation. Includes tools for reading YAML files, processing MoCap poses, and replicating or saving trajectories.
 
-### Prerequisites
+- `driverTestFloatArray.py`: Test script for publishing/subscribing `Float32MultiArray` topics in ROS 2.
+- `mocap2.py`, `read_MoCap_poses.py`: Process and parse MoCap poses.
+- `replicateTrajectory.py`, `replicate_trajectory.sh`: Replicates or transforms existing trajectories.
+- `save_trajectory.sh`: Bash script to record current robot trajectory.
+- `reading_yaml.py`, `optical_calib_values.py`: Utility scripts to load calibration/config files.
 
-- Ubuntu 20.04 or 22.04
-- ROS2 (Humble or Iron) installed
-- Intel RealSense SDK 2.0
+---
 
-### Steps
+### `calibration/`
+Scripts and configuration files for camera and robot calibration, coordinate system definition, and transformation conversion.
 
-1. **Install Dependencies**: Ensure that the required packages and dependencies are installed. You can do this by running:
-   ```bash
-   sudo apt update
-   sudo apt install ros-<ros_distro>-ros-base python3-colcon-common-extensions
-   ```
+- `camera_calibration.py`: Performs camera calibration routines.
+- `coordinate_origin_sys.py`: Defines or shifts the coordinate frame origin.
+- `fCSVtoT.py`: Converts CSV entries to transformation matrices.
+- `robot-base.csv`, `transformations.yaml`: Stores static calibration values and reference poses.
 
-2. **Clone the Repository**:
-   ```bash
-   mkdir -p ~/ros2_ws/src
-   cd ~/ros2_ws/src
-   git clone https://github.com/samuel-cerezo/d435-ROS2.git
-   ```
+---
 
-3. **Install the RealSense SDK**:
-   Follow the instructions from the [Intel RealSense SDK documentation](https://github.com/IntelRealSense/librealsense/blob/master/doc/installation/pc.md) to install the SDK.
+### `create_trajectory/`
+ROS 2 scripts that connect to the robot interface and log the joint states in real time, creating a trajectory dataset. These trajectories are typically used as reference motions or ground truth.
 
-4. **Build the Workspace**:
-   Navigate back to your workspace directory and build the package:
-   ```bash
-   cd ~/ros2_ws
-   rosdep install -i --from-path src --rosdistro <ros_distro> -y
-   colcon build
-   ```
+---
 
-5. **Source the Environment**:
-   After building, source your ROS2 setup:
-   ```bash
-   source install/local_setup.bash
-   ```
+### `csv-verification/`
+Scripts to verify the integrity and format of recorded trajectories (CSV). Checks include consistency in timestamps, completeness of pose data, and basic statistical sanity.
 
-## Usage
+---
 
-To launch the D435 camera node, use the following command:
+### `post_processing/`
+Tools to convert, align, and visualize data after recording.
+
+- `alignment_utils.py`: Aligns estimated and ground truth trajectories.
+- `create_video.py`: Generates video outputs from recorded frames.
+- `fFlange2world.py`, `fJoints2Pose.py`: Compute poses from joint or flange data.
+- `reading_depth.py`, `show_depth.py`: Load and visualize depth images.
+- `rosbag2TUM.py`: Converts recorded data to TUM trajectory format.
+- `sync.py`: Synchronizes multiple data streams in time.
+
+---
+
+## ⚙️ Requirements
+
+- ROS 2 (recommended: Foxy, Humble, or Galactic)
+- Python 3.8+
+- Standard ROS 2 packages:
+  - `rclpy`, `sensor_msgs`, `geometry_msgs`, etc.
+- Optional dependencies:
+  - `numpy`, `opencv-python`, `matplotlib`, `PyYAML`
+
+Install Python dependencies via:
+
 ```bash
-ros2 launch d435_camera rs_launch.py
-```
-You can also customize parameters such as resolution and frame rates by modifying the launch file or passing arguments via the command line.
-
-### Published Topics
-
-The D435 camera will publish various topics, including but not limited to:
-- `/camera/color/image_raw`
-- `/camera/depth/image_rect_raw`
-- `/camera/imu`
-
-Use the following command to list all available topics:
-```bash
-ros2 topic list
+pip install -r requirements.txt
+# (Create the requirements.txt if needed)
 ```
 
-## Contributing
+---
 
-Contributions to the D435 ROS2 project are welcome! If you have suggestions for improvements or features, please fork the repository and submit a pull request.
+## 🚀 Usage Examples
 
-## License
+```bash
+# Launch the robot camera node
+./start_camera_samuel.sh
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+# Record a data session
+./record_data_samuel.sh
 
-## Acknowledgments
+# Replicate a recorded trajectory
+python aditional-scripts/replicateTrajectory.py --input traj.csv
 
-- Thanks to the Intel RealSense team for providing the SDK and documentation.
-- ROS2 community for their continued support and development.
+# Verify CSV data integrity
+python csv-verification/verify_csv.py --input traj.csv
+
+# Convert rosbag to TUM format
+python post_processing/rosbag2TUM.py --bag mydata.bag --output traj.tum
+```
+
+---
+
+## 🧪 Example Workflow
+
+1. Start camera and robot nodes.
+2. Launch recording with `record_data_samuel.sh`.
+3. Process and convert the trajectory using scripts in `post_processing/`.
+4. Optionally validate the data with tools from `csv-verification/`.
+5. Calibrate the system using tools in `calibration/`.
+
+---
+
+## 👤 Author
+
+Developed by **Samuel Cerezo** during a robotics research stay in 2025.
+
+---
+
+## 📜 License
+
+This code is released for academic and research use. For commercial applications or redistribution, please contact the author.
