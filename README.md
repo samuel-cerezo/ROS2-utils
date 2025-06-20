@@ -54,7 +54,7 @@ Tools to convert, align, and visualize data after recording.
 
 ## ⚙️ Requirements
 
-- ROS 2 (recommended: Foxy, Humble, or Galactic)
+- ROS 2 Humble
 - Python 3.8+
 - Standard ROS 2 packages:
   - `rclpy`, `sensor_msgs`, `geometry_msgs`, etc.
@@ -65,7 +65,6 @@ Install Python dependencies via:
 
 ```bash
 pip install -r requirements.txt
-# (Create the requirements.txt if needed)
 ```
 
 ---
